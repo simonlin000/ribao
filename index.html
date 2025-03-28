@@ -1240,7 +1240,19 @@
             const DEFAULT_REPORT = {
                 date: "2025-03-26",
                 weekday: "周二",
-                content: defaultReportContent
+                content: `<div class="header">
+                     <h1>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v2h-2zm0 4h2v6h-2z"/></svg>
+                        AI自媒体创造营 日报
+                    </h1>
+                    <div class="date">2025年3月26日 (周三)</div>
+                </div>
+                <div class="section">
+                    <h2>AI自媒体创造营日报</h2>
+                    <p>欢迎来到AI自媒体创造营日报馆！这里收录了创造营的每日动态和精彩内容。</p>
+                    <p>这是一个自定义的默认日报内容，如果您看到这段文字，说明默认日报已成功加载。</p>
+                    <p style="color: #ff6b6b; font-weight: bold; font-size: 18px;">这是一段醒目的红色文字用于测试。如果您能看到我，说明日报系统工作正常！</p>
+                </div>`
             };
             
             // 初始化应用程序
@@ -1269,6 +1281,9 @@
                     console.log("用户已登录，显示主内容");
                     userAuthenticated = true;
                     showMainContent(userIsAdmin);
+                    
+                    // 立即加载默认日报
+                    loadReportContent('2025-03-26');
                 } else {
                     console.log("用户未登录，显示登录界面");
                     showLoginScreen();
@@ -2208,9 +2223,25 @@
                             // 如果API没有找到报告，检查是否是默认日期
                             if (date === '2025-03-26') {
                                 // 确保3月26日的内容一直存在
+                                console.log("API返回数据为空，使用默认日报");
                                 reportData = DEFAULT_REPORT;
-                                // 将默认报告添加到服务器
+                                
+                                // 直接使用默认日报内容更新界面
+                                const contentContainer = document.getElementById('reportContent');
+                                if (contentContainer) {
+                                    contentContainer.innerHTML = DEFAULT_REPORT.content;
+                                    console.log("已直接使用DEFAULT_REPORT显示内容");
+                                    
+                                    // 移动端优化
+                                    if (window.innerWidth <= 900) {
+                                        optimizeContentForMobile();
+                                    }
+                                    return;
+                                }
+                                
+                                // 尝试将默认报告添加到服务器（后台处理，无需等待）
                                 apiService.saveReport('2025-03-26', DEFAULT_REPORT.content)
+                                    .then(() => console.log("默认报告已保存到服务器"))
                                     .catch(error => console.error('保存默认报告失败:', error));
                             } else {
                                 console.error('未找到指定日期的报告:', date);
