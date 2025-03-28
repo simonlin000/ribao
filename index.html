@@ -1256,6 +1256,9 @@
                     console.log("设置初始密码: " + defaultPassword);
                 }
                 
+                // 确保HTML结构完整
+                ensureReportStructure();
+                
                 // 检查用户是否已登录
                 const isLoggedIn = localStorage.getItem('isLoggedIn');
                 const userIsAdmin = localStorage.getItem('isAdmin') === 'true';
@@ -2195,6 +2198,9 @@
             function loadReportContent(date) {
                 console.log("加载日期为 " + date + " 的报告");
                 
+                // 确保HTML结构完整
+                ensureReportStructure();
+                
                 // 从API获取日报数据
                 apiService.getReport(date)
                     .then(reportData => {
@@ -2217,14 +2223,59 @@
                         if (dateElement) { // 添加null检查
                             dateElement.textContent = formatDate(date);
                         } else {
-                            console.warn('日期元素不存在，无法设置日期显示');
+                            console.warn('日期元素不存在，尝试创建日期元素');
+                            // 尝试查找header元素
+                            const headerElement = document.querySelector('.header');
+                            if (headerElement) {
+                                // 创建新的日期元素
+                                const newDateElement = document.createElement('div');
+                                newDateElement.className = 'date';
+                                newDateElement.textContent = formatDate(date);
+                                
+                                // 检查是否已有h1元素
+                                const h1Element = headerElement.querySelector('h1');
+                                if (h1Element) {
+                                    // 在h1元素后添加日期元素
+                                    if (h1Element.nextSibling) {
+                                        headerElement.insertBefore(newDateElement, h1Element.nextSibling);
+                                    } else {
+                                        headerElement.appendChild(newDateElement);
+                                    }
+                                } else {
+                                    // 如果没有h1，直接添加到header
+                                    headerElement.appendChild(newDateElement);
+                                }
+                                console.log('已创建日期元素');
+                            } else {
+                                console.error('header元素不存在，无法创建日期显示');
+                            }
                         }
                         
                         // 更新内容
                         const contentContainer = document.getElementById('reportContent');
                         if (contentContainer) { // 添加null检查
                             if (reportData.content) {
+                                // 保存header内容
+                                const headerElement = contentContainer.querySelector('.header');
+                                let headerContent = '';
+                                if (headerElement) {
+                                    headerContent = headerElement.outerHTML;
+                                }
+                                
+                                // 更新整个内容
                                 contentContainer.innerHTML = reportData.content;
+                                
+                                // 检查是否需要恢复header
+                                if (headerContent && !contentContainer.querySelector('.header')) {
+                                    // 如果新内容没有header，添加保存的header
+                                    contentContainer.insertAdjacentHTML('afterbegin', headerContent);
+                                    
+                                    // 确保日期显示正确
+                                    const dateElement = contentContainer.querySelector('.header .date');
+                                    if (dateElement) {
+                                        dateElement.textContent = formatDate(date);
+                                    }
+                                }
                                 
                                 // 移动端优化 - 多次调用优化函数确保内容完整显示
                                 if (window.innerWidth <= 900) {
@@ -2344,6 +2395,60 @@
             // 初始化应用
             initialize();
         });
+
+        // 确保日报HTML结构完整
+        function ensureReportStructure() {
+            const contentContainer = document.getElementById('reportContent');
+            if (!contentContainer) {
+                console.error('报告容器不存在，无法创建HTML结构');
+                return false;
+            }
+            
+            // 检查header结构
+            let headerElement = contentContainer.querySelector('.header');
+            if (!headerElement) {
+                // 创建header
+                headerElement = document.createElement('div');
+                headerElement.className = 'header';
+                
+                // 添加标题
+                const titleElement = document.createElement('h1');
+                titleElement.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v2h-2zm0 4h2v6h-2z"/></svg>
+                    AI自媒体创造营 日报
+                `;
+                headerElement.appendChild(titleElement);
+                
+                // 添加日期
+                const dateElement = document.createElement('div');
+                dateElement.className = 'date';
+                dateElement.textContent = formatDate(new Date().toISOString().split('T')[0]);
+                headerElement.appendChild(dateElement);
+                
+                // 添加到容器的开头
+                if (contentContainer.firstChild) {
+                    contentContainer.insertBefore(headerElement, contentContainer.firstChild);
+                } else {
+                    contentContainer.appendChild(headerElement);
+                }
+                
+                console.log('已创建header结构');
+            }
+            
+            // 确保日期元素存在
+            if (!contentContainer.querySelector('.header .date')) {
+                const dateElement = document.createElement('div');
+                dateElement.className = 'date';
+                dateElement.textContent = formatDate(new Date().toISOString().split('T')[0]);
+                headerElement.appendChild(dateElement);
+                console.log('已创建日期元素');
+            }
+            
+            return true;
+        }
+
+        // 设置定期检查密码更新的间隔
+        setInterval(updateDailyPasswordIfNeeded, 60 * 60 * 1000); // 每小时检查一次
     </script>
 </body>
 </html>
