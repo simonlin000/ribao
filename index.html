@@ -1347,6 +1347,12 @@
             function optimizeContentForMobile() {
                 const contentContainer = document.getElementById('reportContent');
                 
+                // 确保内容容器存在
+                if (!contentContainer) {
+                    console.warn('优化移动端内容失败：内容容器不存在');
+                    return;
+                }
+                
                 // 确保内容容器本身可以完整显示
                 contentContainer.style.width = '100%';
                 contentContainer.style.maxHeight = 'none'; // 移除最大高度限制
@@ -2208,43 +2214,55 @@
                         
                         // 更新日期显示
                         const dateElement = document.querySelector('.header .date');
-                        dateElement.textContent = formatDate(date);
+                        if (dateElement) { // 添加null检查
+                            dateElement.textContent = formatDate(date);
+                        } else {
+                            console.warn('日期元素不存在，无法设置日期显示');
+                        }
                         
                         // 更新内容
                         const contentContainer = document.getElementById('reportContent');
-                        if (reportData.content) {
-                            contentContainer.innerHTML = reportData.content;
-                            
-                            // 移动端优化 - 多次调用优化函数确保内容完整显示
-                            if (window.innerWidth <= 900) {
-                                // 立即优化一次
-                                optimizeContentForMobile();
+                        if (contentContainer) { // 添加null检查
+                            if (reportData.content) {
+                                contentContainer.innerHTML = reportData.content;
                                 
-                                // 100ms后再次优化
-                                setTimeout(function() {
-                                    optimizeContentForMobile();
-                                }, 100);
-                                
-                                // 300ms后再次优化，确保所有内容都已加载并正确显示
-                                setTimeout(function() {
+                                // 移动端优化 - 多次调用优化函数确保内容完整显示
+                                if (window.innerWidth <= 900) {
+                                    // 立即优化一次
                                     optimizeContentForMobile();
                                     
-                                    // 确保内容容器和主内容区域可滚动
-                                    const mainContent = document.querySelector('.main-content');
-                                    if (mainContent) {
-                                        mainContent.scrollTop = 0; // 滚动到顶部以确保用户看到完整内容
-                                    }
-                                }, 300);
+                                    // 100ms后再次优化
+                                    setTimeout(function() {
+                                        optimizeContentForMobile();
+                                    }, 100);
+                                    
+                                    // 300ms后再次优化，确保所有内容都已加载并正确显示
+                                    setTimeout(function() {
+                                        optimizeContentForMobile();
+                                        
+                                        // 确保内容容器和主内容区域可滚动
+                                        const mainContent = document.querySelector('.main-content');
+                                        if (mainContent) {
+                                            mainContent.scrollTop = 0; // 滚动到顶部以确保用户看到完整内容
+                                        }
+                                    }, 300);
+                                }
+                            } else {
+                                console.error('报告内容为空');
+                                contentContainer.innerHTML = '<div class="section"><h2>内容错误</h2><p>此日报内容为空或格式不正确</p></div>';
                             }
                         } else {
-                            console.error('报告内容为空');
-                            contentContainer.innerHTML = '<div class="section"><h2>内容错误</h2><p>此日报内容为空或格式不正确</p></div>';
+                            console.error('内容容器不存在，无法加载日报内容');
                         }
                     })
                     .catch(error => {
                         console.error('加载日报失败:', error);
                         const contentContainer = document.getElementById('reportContent');
-                        contentContainer.innerHTML = '<div class="section"><h2>加载错误</h2><p>无法从服务器加载日报内容</p></div>';
+                        if (contentContainer) {
+                            contentContainer.innerHTML = '<div class="section"><h2>加载错误</h2><p>无法从服务器加载日报内容</p></div>';
+                        } else {
+                            console.error('内容容器不存在，无法显示错误信息');
+                        }
                     });
             }
             
@@ -2307,6 +2325,21 @@
             
             // 设置定期检查密码更新的间隔
             setInterval(updateDailyPasswordIfNeeded, 60 * 60 * 1000); // 每小时检查一次
+            
+            // 安全的DOM元素操作辅助函数
+            function safeSetContent(selector, content, isHtml = false) {
+                const element = document.querySelector(selector);
+                if (element) {
+                    if (isHtml) {
+                        element.innerHTML = content;
+                    } else {
+                        element.textContent = content;
+                    }
+                    return true;
+                }
+                console.warn(`无法设置内容：元素 "${selector}" 不存在`);
+                return false;
+            }
             
             // 初始化应用
             initialize();
