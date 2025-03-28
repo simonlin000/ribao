@@ -1966,51 +1966,52 @@
             }
             
             // 显示主内容
-            function showMainContent(asAdmin) {
-                console.log("显示主内容, 管理员权限: " + asAdmin);
+            function showMainContent(isAdmin) {
+                console.log("显示主内容，管理员权限:", isAdmin);
                 
-                // 隐藏认证屏幕
+                // 隐藏登录屏幕
                 guestAuthScreen.style.display = 'none';
                 adminAuthScreen.style.display = 'none';
+                
+                // 确保main-content元素存在
+                let mainContentElement = document.querySelector('.main-content');
+                if (!mainContentElement) {
+                    console.log("main-content不存在，创建一个");
+                    mainContentElement = document.createElement('div');
+                    mainContentElement.className = 'main-content';
+                    document.getElementById('mainContent').appendChild(mainContentElement);
+                }
                 
                 // 显示主内容
                 mainContent.style.display = 'flex';
                 
-                // 在移动端视图下调整主内容显示
-                if (window.innerWidth <= 900) {
-                    document.querySelector('.main-content').style.display = 'block';
-                    // 确保侧边栏一开始是隐藏的
-                    document.getElementById('sidebar').classList.remove('active');
+                // 确保reportContent元素存在
+                let reportContentElement = document.getElementById('reportContent');
+                if (!reportContentElement) {
+                    console.log("reportContent不存在，创建一个");
+                    reportContentElement = document.createElement('div');
+                    reportContentElement.id = 'reportContent';
+                    reportContentElement.className = 'content-container';
+                    mainContentElement.appendChild(reportContentElement);
+                    
+                    // 默认添加一些内容，避免空白
+                    reportContentElement.innerHTML = DEFAULT_REPORT.content;
                 }
                 
-                // 显示/隐藏管理员按钮
-                adminBtn.style.display = asAdmin ? 'flex' : 'none';
+                // 处理管理员UI
+                if (isAdmin) {
+                    adminBtn.style.display = 'block';
+                } else {
+                    adminBtn.style.display = 'none';
+                }
                 
-                // 更新侧边栏日报列表
+                // 更新侧边栏报告列表
                 updateSidebarReportList();
                 
-                // 加载最新日报内容（或默认日报）
-                const reports = JSON.parse(localStorage.getItem('reports') || '{}');
-                const reportDates = Object.keys(reports).sort().reverse();
-                
-                if (reportDates.length > 0) {
-                    // 加载最新的日报
-                    currentViewingReportDate = reportDates[0];
-                    loadReportContent(reportDates[0]);
-                    updateActiveDayItem(reportDates[0]);
-                } else {
-                    // 如果没有日报，加载默认日报
-                    currentViewingReportDate = "2025-03-26";
+                // 立即加载默认日报
+                setTimeout(() => {
                     loadReportContent('2025-03-26');
-                    updateActiveDayItem("2025-03-26");
-                }
-                
-                // 移动端优化
-                if (window.innerWidth <= 900) {
-                    setTimeout(function() {
-                        optimizeContentForMobile();
-                    }, 100);
-                }
+                }, 100);
             }
             
             // 检查并更新每日密码（如果是新的一天）
@@ -2216,9 +2217,31 @@
                 // 确保HTML结构完整
                 ensureReportStructure();
                 
+                // 对于3月26日的日报，直接使用默认内容强制显示
+                if (date === '2025-03-26') {
+                    console.log("检测到加载3月26日的日报，将直接使用默认内容");
+                    const contentContainer = document.getElementById('reportContent');
+                    if (contentContainer) {
+                        console.log("找到内容容器，更新内容");
+                        contentContainer.innerHTML = DEFAULT_REPORT.content;
+                        console.log("已强制设置3月26日的默认日报内容");
+                        
+                        // 移动端优化
+                        if (window.innerWidth <= 900) {
+                            optimizeContentForMobile();
+                        }
+                        return;
+                    } else {
+                        console.error("找不到内容容器，无法显示日报内容");
+                    }
+                }
+                
                 // 从API获取日报数据
+                console.log(`正在从API获取日期为 ${date} 的报告...`);
                 apiService.getReport(date)
                     .then(reportData => {
+                        console.log("API返回数据:", reportData ? "非空" : "为空", reportData);
+                        
                         if (!reportData) {
                             // 如果API没有找到报告，检查是否是默认日期
                             if (date === '2025-03-26') {
@@ -2237,6 +2260,8 @@
                                         optimizeContentForMobile();
                                     }
                                     return;
+                                } else {
+                                    console.error("找不到内容容器，无法显示默认日报");
                                 }
                                 
                                 // 尝试将默认报告添加到服务器（后台处理，无需等待）
@@ -2430,9 +2455,28 @@
         // 确保日报HTML结构完整
         function ensureReportStructure() {
             const contentContainer = document.getElementById('reportContent');
+            console.log('检查reportContent是否存在:', contentContainer ? '存在' : '不存在');
+            
             if (!contentContainer) {
-                console.error('报告容器不存在，无法创建HTML结构');
-                return false;
+                console.error('报告容器不存在，尝试创建容器元素');
+                
+                // 检查是否有main-content容器
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent) {
+                    console.log('找到main-content容器，在其中创建reportContent');
+                    
+                    // 创建报告容器
+                    const newContentContainer = document.createElement('div');
+                    newContentContainer.id = 'reportContent';
+                    newContentContainer.className = 'content-container';
+                    mainContent.appendChild(newContentContainer);
+                    
+                    console.log('已创建reportContent容器');
+                    return true;
+                } else {
+                    console.error('main-content容器不存在，无法创建HTML结构');
+                    return false;
+                }
             }
             
             // 检查header结构
@@ -2475,11 +2519,46 @@
                 console.log('已创建日期元素');
             }
             
+            console.log('日报HTML结构检查完成');
             return true;
         }
 
         // 设置定期检查密码更新的间隔
         // setInterval(updateDailyPasswordIfNeeded, 60 * 60 * 1000); // 每小时检查一次 - 重复调用，已在上面定义
+        
+        // 测试函数 - 直接在控制台调用显示默认日报
+        function testShowDefaultReport() {
+            console.log("开始测试显示默认日报...");
+            
+            // 检查元素存在
+            const contentContainer = document.getElementById('reportContent');
+            console.log("reportContent容器:", contentContainer ? "存在" : "不存在");
+            
+            if (!contentContainer) {
+                console.log("reportContent不存在，尝试创建");
+                ensureReportStructure();
+            }
+            
+            // 获取创建后的容器
+            const container = document.getElementById('reportContent');
+            if (container) {
+                console.log("向reportContent写入默认内容");
+                container.innerHTML = DEFAULT_REPORT.content;
+                console.log("内容已写入");
+                
+                // 检查内容是否被正确写入
+                setTimeout(() => {
+                    const content = document.getElementById('reportContent').innerHTML;
+                    console.log("最终内容长度:", content.length);
+                    console.log("内容包含红色测试文字:", content.includes("这是一段醒目的红色文字") ? "是" : "否");
+                }, 100);
+            } else {
+                console.error("无法获取或创建reportContent，测试失败");
+            }
+        }
+        
+        // 在页面加载完毕后自动执行测试
+        setTimeout(testShowDefaultReport, 2000);
     </script>
 </body>
 </html>
