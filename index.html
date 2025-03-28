@@ -1101,6 +1101,10 @@
             // API基本路径
             baseUrl: '/api',
             
+            // 管理员凭据 - 全局常量
+            ADMIN_USERNAME: "simon912",
+            ADMIN_PASSWORD: "dabao0123",
+            
             // 获取所有日报
             async getAllReports() {
                 try {
@@ -1136,7 +1140,7 @@
             async saveReport(date, content) {
                 try {
                     // 获取管理员凭据
-                    const credentials = `${ADMIN_USERNAME}:${ADMIN_PASSWORD}`;
+                    const credentials = `${this.ADMIN_USERNAME}:${this.ADMIN_PASSWORD}`;
                     const encodedCredentials = btoa(credentials);
                     
                     const response = await fetch(`${this.baseUrl}/reports`, {
@@ -1163,7 +1167,7 @@
             async deleteReport(date) {
                 try {
                     // 获取管理员凭据
-                    const credentials = `${ADMIN_USERNAME}:${ADMIN_PASSWORD}`;
+                    const credentials = `${this.ADMIN_USERNAME}:${this.ADMIN_PASSWORD}`;
                     const encodedCredentials = btoa(credentials);
                     
                     const response = await fetch(`${this.baseUrl}/reports/${date}`, {
@@ -1222,10 +1226,6 @@
             // Tab元素
             const adminTabs = document.querySelectorAll('.admin-tab');
             const adminTabContents = document.querySelectorAll('.admin-tab-content');
-            
-            // 管理员凭据 - 全局常量
-            const ADMIN_USERNAME = "simon912";
-            const ADMIN_PASSWORD = "dabao0123";
             
             // 当前查看的日报日期
             let currentViewingReportDate = "2025-03-26";
@@ -1888,7 +1888,7 @@
             function processAdminLogin(username, password) {
                 console.log("验证管理员凭据...");
                 // 验证管理员凭据
-                if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                if (username === apiService.ADMIN_USERNAME && password === apiService.ADMIN_PASSWORD) {
                     console.log("管理员登录成功!");
                     // 登录成功
                     loginSuccess(true);
