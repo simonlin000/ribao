@@ -5,11 +5,18 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "netlify-lambda build functions"
+    "dev": "netlify dev",
+    "setup-fauna": "node setup-fauna.js",
+    "setup-fauna-http": "node setup-fauna-http.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "body-parser": "^1.20.2",
-    "netlify-lambda": "^2.0.15"
+    "faunadb": "^4.8.0",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {
+    "netlify-cli": "^15.0.0"
   }
 }
