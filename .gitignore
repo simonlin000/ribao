@@ -14,3 +14,5 @@ Thumbs.db
 # 环境变量文件
 .env
 .env.local 
+# Local Netlify folder
+.netlify
