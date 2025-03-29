@@ -918,6 +918,62 @@
             font-size: 14px;
             z-index: 9900;
         }
+        
+        .loading-indicator {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            z-index: 1000;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 10px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background-color: #fff5f5;
+            border-left: 4px solid #ff5252;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .error-message h2 {
+            color: #d32f2f;
+            margin-top: 0;
+        }
+        
+        .error-message button {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .error-message button:hover {
+            background-color: #b71c1c;
+        }
     </style>
 </head>
 <body>
@@ -1091,6 +1147,10 @@
                     <!-- More report content would be here -->
                 </div>
                 <!-- Additional sections would continue here -->
+            </div>
+            <div id="loadingIndicator" class="loading-indicator">
+                <div class="spinner"></div>
+                <div>加载中...</div>
             </div>
         </div>
     </div>
@@ -2033,101 +2093,67 @@
             
             // 更新侧边栏日报列表
             function updateSidebarReportList() {
-                console.log("正在更新侧边栏日报列表...");
-                const marchDaysList = document.getElementById('march-days');
-                
-                if (!marchDaysList) {
-                    console.error("找不到march-days元素，无法更新侧边栏");
-                    return;
-                }
-                
-                // 保存当前选中的日期，确保更新后仍然高亮
-                const selectedDate = currentViewingReportDate;
-                console.log("当前选中的日期:", selectedDate);
-                
-                // 清空所有内容
-                marchDaysList.innerHTML = '';
-                
-                // 确保刚保存的日报显示在侧边栏中
-                let recentlySavedDates = JSON.parse(localStorage.getItem('recentlySavedDates') || '[]');
-                
-                // 将当前日期加入最近保存列表
-                if (selectedDate && !recentlySavedDates.includes(selectedDate)) {
-                    recentlySavedDates.push(selectedDate);
-                    localStorage.setItem('recentlySavedDates', JSON.stringify(recentlySavedDates));
-                }
-                
-                // 使用API获取所有报告
-                apiService.getAllReports()
-                    .then(reports => {
-                        console.log("API返回报告:", Object.keys(reports).length, "个");
-                        
-                        // 合并API报告与本地保存的报告
-                        recentlySavedDates.forEach(date => {
-                            if (!reports[date]) {
-                                reports[date] = {
-                                    date: date,
-                                    weekday: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][new Date(date).getDay()]
-                                };
-                            }
-                        });
-                        
-                        // 筛选出3月的报告并排序
-                        const marchReports = Object.keys(reports)
-                            .filter(date => date.startsWith('2025-03-'))
-                            .sort()
-                            .reverse();
-                        
-                        console.log("3月份报告:", marchReports.length, "个");
-                        
-                        // 添加日报项
-                        marchReports.forEach(date => {
-                            const dateObj = new Date(date);
-                            const day = dateObj.getDate();
-                            const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dateObj.getDay()];
+                try {
+                    console.log("开始更新侧边栏日报列表");
+                    
+                    // 获取侧边栏的3月份日期列表元素
+                    const marchDaysList = document.getElementById('marchDaysList');
+                    if (!marchDaysList) {
+                        console.error("找不到marchDaysList元素，无法更新侧边栏");
+                        return;
+                    }
+                    
+                    // 显示加载中
+                    marchDaysList.innerHTML = '<li class="loading">加载中...</li>';
+                    
+                    // 获取所有报告
+                    apiService.getAllReports()
+                        .then(reports => {
+                            // 清空现有列表
+                            marchDaysList.innerHTML = '';
                             
-                            const dayItem = document.createElement('div');
-                            dayItem.className = 'day-item';
-                            if (date === selectedDate) {
-                                dayItem.classList.add('active');
+                            // 如果没有报告或报告为空数组
+                            if (!reports || !reports.length) {
+                                marchDaysList.innerHTML = '<li class="no-reports">没有找到日报</li>';
+                                return;
                             }
-                            dayItem.innerHTML = `<a href="#" data-date="${date}">${day}日 (${weekday})</a>`;
-                            marchDaysList.appendChild(dayItem);
-                        });
-                        
-                        // 确保日期列表正确显示
-                        setTimeout(function() {
-                            if (window.innerWidth <= 900) {
-                                fixMobileDayLists();
-                            }
-                        }, 100);
-                    })
-                    .catch(error => {
-                        console.error('获取报告列表失败:', error);
-                        
-                        // 即使API失败，仍然显示当前正在查看的日报
-                        const defaultDateItem = document.createElement('div');
-                        defaultDateItem.className = 'day-item active';
-                        defaultDateItem.innerHTML = `<a href="#" data-date="2025-03-26">26日 (周三)</a>`;
-                        marchDaysList.appendChild(defaultDateItem);
-                        
-                        // 显示最近保存的日期
-                        recentlySavedDates.forEach(date => {
-                            if (date !== '2025-03-26') {
-                                const dateObj = new Date(date);
-                                const day = dateObj.getDate();
-                                const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dateObj.getDay()];
-                                
-                                const dayItem = document.createElement('div');
-                                dayItem.className = 'day-item';
-                                if (date === selectedDate) {
-                                    dayItem.classList.add('active');
+                            
+                            // 确保按日期排序（最新的在前面）
+                            reports.sort((a, b) => new Date(b.date) - new Date(a.date));
+                            
+                            // 创建可点击的日期列表
+                            reports.forEach(report => {
+                                const listItem = document.createElement('li');
+                                if (report.date === currentViewingReportDate) {
+                                    listItem.className = 'selected';
                                 }
-                                dayItem.innerHTML = `<a href="#" data-date="${date}">${day}日 (${weekday})</a>`;
-                                marchDaysList.appendChild(dayItem);
+                                
+                                // 提取日期中的日
+                                const day = new Date(report.date).getDate();
+                                
+                                listItem.innerHTML = `<span>${day}日</span>`;
+                                listItem.addEventListener('click', () => loadReportContent(report.date));
+                                marchDaysList.appendChild(listItem);
+                            });
+                            
+                            console.log("侧边栏日报列表更新完成");
+                        })
+                        .catch(error => {
+                            console.error("获取日报列表失败:", error);
+                            marchDaysList.innerHTML = '<li class="error">加载失败</li>';
+                            
+                            // 即使加载失败，也确保当前报告在侧边栏中显示
+                            if (currentViewingReportDate) {
+                                const day = new Date(currentViewingReportDate).getDate();
+                                const listItem = document.createElement('li');
+                                listItem.className = 'selected';
+                                listItem.innerHTML = `<span>${day}日</span>`;
+                                marchDaysList.appendChild(listItem);
                             }
                         });
-                    });
+                } catch (error) {
+                    console.error("更新侧边栏时发生错误:", error);
+                }
             }
             
             // 加载日报列表到管理员面板
@@ -2214,7 +2240,12 @@
                 // 立即尝试更新侧边栏
                 try {
                     console.log("尝试立即更新侧边栏...");
+                    // 确保函数存在再调用
+                    if (typeof updateSidebarReportList === 'function') {
                     updateSidebarReportList();
+                    } else {
+                        console.warn("updateSidebarReportList函数不存在，跳过更新侧边栏");
+                    }
                 } catch (e) {
                     console.error("更新侧边栏失败", e);
                 }
@@ -2227,25 +2258,26 @@
                         // 再次强制更新侧边栏和管理面板
                         setTimeout(() => {
                             console.log("API保存成功后，再次更新侧边栏和管理面板");
+                            try {
+                                if (typeof updateSidebarReportList === 'function') {
                             updateSidebarReportList();
+                                }
+                                if (typeof loadReportsList === 'function') {
                             loadReportsList();
+                                }
+                            } catch (e) {
+                                console.error("更新侧边栏或管理面板失败", e);
+                            }
                         }, 500);
                     })
                     .catch(error => {
                         console.error('保存日报失败:', error);
-                        
-                        // 尽管API失败，仍然尝试强制更新侧边栏
+                        // 虽然API保存失败，但是界面上已经更新了内容
+                        reportError.style.display = 'block';
+                        reportError.textContent = '保存到服务器失败，但内容已在本地更新';
                         setTimeout(() => {
-                            try {
-                                console.log("虽然API保存失败，仍然尝试更新侧边栏");
-                                updateSidebarReportList();
-                                loadReportsList();
-                            } catch (e) {
-                                console.error("最终更新侧边栏失败", e);
-                            }
-                        }, 500);
-                        
-                        // 保存失败提示（已在开始时显示成功消息，所以这里不需要显示失败消息）
+                            reportError.style.display = 'none';
+                        }, 3000);
                     });
             }
             
@@ -2307,165 +2339,156 @@
             
             // 动态加载日报内容
             function loadReportContent(date) {
-                console.log("加载日期为 " + date + " 的报告");
+                console.log(`加载 ${date} 的报告内容`);
                 
-                // 确保HTML结构完整
+                // 确保页面结构完整
                 ensureReportStructure();
                 
-                // 对于3月26日的日报，直接使用默认内容强制显示
+                // 更新当前查看的报告日期
+                currentViewingReportDate = date;
+                
+                // 获取内容容器
+                const contentContainer = document.getElementById('reportContent');
+                if (!contentContainer) {
+                    console.error("找不到内容容器，无法加载报告");
+                    return;
+                }
+                
+                // 显示加载动画
+                safeSetContent('loadingIndicator', '', false);
+                document.getElementById('loadingIndicator').style.display = 'block';
+                
+                // 更新日期显示
+                const dateElement = document.querySelector('.header .date');
+                if (dateElement) {
+                    dateElement.textContent = formatDate(date);
+                } else {
+                    console.warn("日期元素不存在，无法设置日期显示");
+                }
+                
+                // 对于固定的示例日期，直接使用默认内容
                 if (date === '2025-03-26') {
-                    console.log("检测到加载3月26日的日报，将直接使用默认内容");
-                    const contentContainer = document.getElementById('reportContent');
-                    if (contentContainer) {
-                        console.log("找到内容容器，更新内容");
-                        contentContainer.innerHTML = DEFAULT_REPORT.content;
-                        console.log("已强制设置3月26日的默认日报内容");
+                    const defaultContent = createDefaultReportContent(date);
+                    contentContainer.innerHTML = defaultContent;
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                    
+                    // 优化移动端显示
+                    if (window.innerWidth <= 900) {
+                        optimizeContentForMobile();
+                    }
+                    
+                    // 更新侧边栏选中状态
+                    const allDayItems = document.querySelectorAll('#marchDaysList li');
+                    allDayItems.forEach(item => item.classList.remove('selected'));
+                    
+                    const targetDayItem = Array.from(allDayItems).find(item => {
+                        const day = parseInt(item.textContent.trim().replace('日', ''));
+                        return day === 26;
+                    });
+                    
+                    if (targetDayItem) {
+                        targetDayItem.classList.add('selected');
+                    }
+                    
+                    return;
+                }
+                
+                // 调用API获取报告内容
+                apiService.getReport(date)
+                    .then(report => {
+                        // 隐藏加载动画
+                        document.getElementById('loadingIndicator').style.display = 'none';
                         
-                        // 移动端优化
+                        if (report && report.content) {
+                            // 报告存在且有内容，更新显示
+                            contentContainer.innerHTML = report.content;
+                        } else {
+                            // 报告不存在或内容为空，创建默认内容
+                            const defaultContent = createDefaultReportContent(date);
+                            contentContainer.innerHTML = defaultContent;
+                            console.log("没有找到报告内容，已创建默认内容");
+                        }
+                        
+                        // 优化移动端显示
                         if (window.innerWidth <= 900) {
                             optimizeContentForMobile();
                         }
-                        return;
-                    } else {
-                        console.error("找不到内容容器，无法显示日报内容");
-                    }
-                }
-                
-                // 从API获取日报数据
-                console.log(`正在从API获取日期为 ${date} 的报告...`);
-                apiService.getReport(date)
-                    .then(reportData => {
-                        console.log("API返回数据:", reportData ? "非空" : "为空", reportData);
                         
-                        if (!reportData) {
-                            // 如果API没有找到报告，检查是否是默认日期
-                            if (date === '2025-03-26') {
-                                // 确保3月26日的内容一直存在
-                                console.log("API返回数据为空，使用默认日报");
-                                reportData = DEFAULT_REPORT;
-                                
-                                // 直接使用默认日报内容更新界面
-                                const contentContainer = document.getElementById('reportContent');
-                                if (contentContainer) {
-                                    contentContainer.innerHTML = DEFAULT_REPORT.content;
-                                    console.log("已直接使用DEFAULT_REPORT显示内容");
-                                    
-                                    // 移动端优化
-                                    if (window.innerWidth <= 900) {
-                                        optimizeContentForMobile();
-                                    }
-                                    return;
-                                } else {
-                                    console.error("找不到内容容器，无法显示默认日报");
-                                }
-                                
-                                // 尝试将默认报告添加到服务器（后台处理，无需等待）
-                                apiService.saveReport('2025-03-26', DEFAULT_REPORT.content)
-                                    .then(() => console.log("默认报告已保存到服务器"))
-                                    .catch(error => console.error('保存默认报告失败:', error));
-                            } else {
-                                console.error('未找到指定日期的报告:', date);
-                                return;
+                        // 更新侧边栏选中状态
+                        try {
+                            const allDayItems = document.querySelectorAll('#marchDaysList li');
+                            allDayItems.forEach(item => item.classList.remove('selected'));
+                            
+                            const targetDay = new Date(date).getDate();
+                            const targetDayItem = Array.from(allDayItems).find(item => {
+                                const day = parseInt(item.textContent.trim().replace('日', ''));
+                                return day === targetDay;
+                            });
+                            
+                            if (targetDayItem) {
+                                targetDayItem.classList.add('selected');
                             }
-                        }
-                        
-                        // 更新日期显示
-                        const dateElement = document.querySelector('.header .date');
-                        if (dateElement) { // 添加null检查
-                            dateElement.textContent = formatDate(date);
-                        } else {
-                            console.warn('日期元素不存在，尝试创建日期元素');
-                            // 尝试查找header元素
-                            const headerElement = document.querySelector('.header');
-                            if (headerElement) {
-                                // 创建新的日期元素
-                                const newDateElement = document.createElement('div');
-                                newDateElement.className = 'date';
-                                newDateElement.textContent = formatDate(date);
-                                
-                                // 检查是否已有h1元素
-                                const h1Element = headerElement.querySelector('h1');
-                                if (h1Element) {
-                                    // 在h1元素后添加日期元素
-                                    if (h1Element.nextSibling) {
-                                        headerElement.insertBefore(newDateElement, h1Element.nextSibling);
-                                    } else {
-                                        headerElement.appendChild(newDateElement);
-                                    }
-                                } else {
-                                    // 如果没有h1，直接添加到header
-                                    headerElement.appendChild(newDateElement);
-                                }
-                                console.log('已创建日期元素');
-                            } else {
-                                console.error('header元素不存在，无法创建日期显示');
-                            }
-                        }
-                        
-                        // 更新内容
-                        const contentContainer = document.getElementById('reportContent');
-                        if (contentContainer) { // 添加null检查
-                            if (reportData.content) {
-                                // 保存header内容
-                                const headerElement = contentContainer.querySelector('.header');
-                                let headerContent = '';
-                                if (headerElement) {
-                                    headerContent = headerElement.outerHTML;
-                                }
-                                
-                                // 更新整个内容
-                                contentContainer.innerHTML = reportData.content;
-                                
-                                // 检查是否需要恢复header
-                                if (headerContent && !contentContainer.querySelector('.header')) {
-                                    // 如果新内容没有header，添加保存的header
-                                    contentContainer.insertAdjacentHTML('afterbegin', headerContent);
-                                    
-                                    // 确保日期显示正确
-                                    const dateElement = contentContainer.querySelector('.header .date');
-                                    if (dateElement) {
-                                        dateElement.textContent = formatDate(date);
-                                    }
-                                }
-                                
-                                // 移动端优化 - 多次调用优化函数确保内容完整显示
-                                if (window.innerWidth <= 900) {
-                                    // 立即优化一次
-                                    optimizeContentForMobile();
-                                    
-                                    // 100ms后再次优化
-                                    setTimeout(function() {
-                                        optimizeContentForMobile();
-                                    }, 100);
-                                    
-                                    // 300ms后再次优化，确保所有内容都已加载并正确显示
-                                    setTimeout(function() {
-                                        optimizeContentForMobile();
-                                        
-                                        // 确保内容容器和主内容区域可滚动
-                                        const mainContent = document.querySelector('.main-content');
-                                        if (mainContent) {
-                                            mainContent.scrollTop = 0; // 滚动到顶部以确保用户看到完整内容
-                                        }
-                                    }, 300);
-                                }
-                            } else {
-                                console.error('报告内容为空');
-                                contentContainer.innerHTML = '<div class="section"><h2>内容错误</h2><p>此日报内容为空或格式不正确</p></div>';
-                            }
-                        } else {
-                            console.error('内容容器不存在，无法加载日报内容');
+                        } catch (e) {
+                            console.warn("更新侧边栏选中状态失败", e);
                         }
                     })
                     .catch(error => {
-                        console.error('加载日报失败:', error);
-                        const contentContainer = document.getElementById('reportContent');
-                        if (contentContainer) {
-                            contentContainer.innerHTML = '<div class="section"><h2>加载错误</h2><p>无法从服务器加载日报内容</p></div>';
-                        } else {
-                            console.error('内容容器不存在，无法显示错误信息');
-                        }
+                        console.error('加载报告失败:', error);
+                        document.getElementById('loadingIndicator').style.display = 'none';
+                        
+                        // 显示错误消息
+                        contentContainer.innerHTML = `
+                            <div class="error-message">
+                                <h2>加载失败</h2>
+                                <p>无法加载 ${formatDate(date)} 的日报内容。</p>
+                                <p>错误信息: ${error.message || '未知错误'}</p>
+                                <button onclick="loadReportContent('${date}')">重试</button>
+                            </div>
+                        `;
                     });
+            }
+            
+            // 创建默认的报告内容
+            function createDefaultReportContent(date) {
+                // 解析日期
+                const dateObj = new Date(date);
+                const day = dateObj.getDate();
+                const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dateObj.getDay()];
+                
+                // 创建默认内容
+                return `
+                    <div class="header">
+                        <h1>3月日报
+                            <svg class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                                <path d="M866.461538 39.384615H157.538462c-65.103385 0-118.153846 53.090462-118.153847 118.153847v708.923076c0 65.103385 53.090462 118.153846 118.153847 118.153847h708.923076c65.103385 0 118.153846-53.090462 118.153847-118.153847V157.538462c0-65.103385-53.090462-118.153846-118.153847-118.153847zM157.538462 118.153846h708.923076c21.779692 0 39.384615 17.604923 39.384616 39.384616v216.615384H118.153846V157.538462c0-21.779692 17.604923-39.384615 39.384616-39.384616z m708.923076 787.692308H157.538462c-21.779692 0-39.384615-17.604923-39.384616-39.384616V452.923077h787.692308v413.538461c0 21.779692-17.604923 39.384615-39.384616 39.384616z" fill="#333333"></path>
+                                <path d="M236.307692 216.615385m-59.076923 0a59.076923 59.076923 0 1 0 118.153846 0 59.076923 59.076923 0 1 0-118.153846 0Z" fill="#333333"></path>
+                                <path d="M787.692308 216.615385m-59.076923 0a59.076923 59.076923 0 1 0 118.153846 0 59.076923 59.076923 0 1 0-118.153846 0Z" fill="#333333"></path>
+                                <path d="M256 649.846154h59.076923v59.076923H256zM256 551.384615h59.076923v59.076923H256zM354.461538 649.846154h59.076924v59.076923h-59.076924zM354.461538 551.384615h59.076924v59.076923h-59.076924zM452.923077 649.846154H512v59.076923h-59.076923zM452.923077 551.384615H512v59.076923h-59.076923zM551.384615 649.846154h59.076923v59.076923h-59.076923zM551.384615 551.384615h59.076923v59.076923h-59.076923zM649.846154 649.846154h59.076923v59.076923h-59.076923zM649.846154 551.384615h59.076923v59.076923h-59.076923z" fill="#333333"></path>
+                            </svg>
+                        </h1>
+                        <span class="date">${day}日 (${weekday})</span>
+                    </div>
+                    <div class="section">
+                        <h2>工作内容</h2>
+                        <ul>
+                            <li>这是${day}日 (${weekday})的日报，请点击编辑按钮填写工作内容</li>
+                            <li>可以添加今日完成的工作项目</li>
+                            <li>可以记录工作中的问题和解决方案</li>
+                        </ul>
+                    </div>
+                    <div class="section">
+                        <h2>明日计划</h2>
+                        <ul>
+                            <li>计划明日需要完成的任务</li>
+                            <li>安排工作优先级</li>
+                            <li>需要协调的事项</li>
+                        </ul>
+                    </div>
+                    <div class="section">
+                        <h2>备注</h2>
+                        <p>这里可以添加一些额外的信息或备注事项</p>
+                    </div>
+                `;
             }
             
             // 格式化日期显示
