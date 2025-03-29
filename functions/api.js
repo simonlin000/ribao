@@ -1,12 +1,11 @@
-// 使用FaunaDB作为持久化存储
-const faunadb = require('faunadb');
-const q = faunadb.query;
+// 使用新版 Fauna SDK
+const { Client, fql } = require('fauna');
 
-// 初始化FaunaDB客户端
-const client = new faunadb.Client({
+// 初始化 Fauna 客户端
+const client = new Client({
   secret: process.env.FAUNA_SECRET,
-  domain: 'db.fauna.com', // 使用默认域名
-  scheme: 'https'
+  endpoint: 'https://db.us.fauna.com', // 北美区域端点
+  timeout: 30000 // 30秒超时
 });
 
 // 默认日报数据
@@ -52,23 +51,21 @@ const ensureDefaultReport = async () => {
   try {
     // 尝试获取默认日报
     try {
-      const result = await client.query(
-        q.Get(q.Match(q.Index('reports_by_date'), DEFAULT_REPORT.date))
-      );
+      // 使用新的 fql 语法
+      const result = await client.query(fql`
+        reports.where(.data.date == ${DEFAULT_REPORT.date}).first()
+      `);
       console.log('默认日报已存在');
       return true;
     } catch (error) {
       // 如果是NotFound错误，创建默认日报
       if (error.name === 'NotFound') {
         try {
-          const result = await client.query(
-            q.Create(
-              q.Collection('reports'),
-              {
-                data: DEFAULT_REPORT
-              }
+          const result = await client.query(fql`
+            reports.create(
+              ${DEFAULT_REPORT}
             )
-          );
+          `);
           console.log('已创建默认日报');
           return true;
         } catch (createError) {
@@ -118,22 +115,27 @@ exports.handler = async function(event, context) {
     // 确保默认日报存在
     await ensureDefaultReport();
     
-    // 处理 GET /reports - 获取所有日报
+    // 修改查询方式示例（以获取所有日报为例）
     if (event.httpMethod === 'GET' && path === '/reports') {
       try {
-        const result = await client.query(
-          q.Map(
-            q.Paginate(q.Documents(q.Collection('reports')), { size: 100 }),
-            q.Lambda(['ref'], q.Get(q.Var('ref')))
-          )
-        );
-        
+        const result = await client.query(fql`
+          let allReports = reports.all().map(report => report)
+          allReports
+        `);
         // 将结果转换为对象格式，按日期索引
         const reports = {};
-        result.data.forEach(item => {
-          reports[item.data.date] = item.data;
+        result.data.data.forEach(item => {
+          // 如果 item.date 未定义，则跳过
+          if (!item.date) {
+            console.warn('跳过一个日报条目，因为它没有日期字段');
+            return;
+          }
+          reports[item.date] = {
+            date: item.date,
+            weekday: item.weekday,
+            content: item.content
+          };
         });
-        
         return {
           statusCode: 200,
           headers,
@@ -160,9 +162,9 @@ exports.handler = async function(event, context) {
       console.log(`尝试获取日期为 ${date} 的日报`);
       
       try {
-        const result = await client.query(
-          q.Get(q.Match(q.Index('reports_by_date'), date))
-        );
+        const result = await client.query(fql`
+          reports.where(.data.date == ${date}).first()
+        `);
         
         console.log(`成功获取日期为 ${date} 的日报`);
         return {
@@ -199,7 +201,7 @@ exports.handler = async function(event, context) {
         };
       }
       
-      const { date, content } = JSON.parse(event.body);
+    const { date, content } = JSON.parse(event.body);
       console.log(`尝试保存日期为 ${date} 的日报`);
       
       if (!date || !content) {
@@ -225,9 +227,9 @@ exports.handler = async function(event, context) {
         let existingRef;
         try {
           console.log(`检查是否存在日期为 ${date} 的日报`);
-          const existingReport = await client.query(
-            q.Get(q.Match(q.Index('reports_by_date'), date))
-          );
+          const existingReport = await client.query(fql`
+            reports.where(.data.date == ${date}).first()
+          `);
           existingRef = existingReport.ref;
           console.log(`找到现有日报，ref:`, existingRef);
         } catch (err) {
@@ -240,12 +242,13 @@ exports.handler = async function(event, context) {
           try {
             // 更新现有日报
             console.log(`更新日期为 ${date} 的日报`);
-            result = await client.query(
-              q.Update(
-                existingRef,
-                { data: reportData }
-              )
-            );
+            result = await client.query(fql`
+              reports.byId(${existingRef.id}).update({
+                date: ${date},
+                weekday: ${weekday},
+                content: ${content}
+              })
+            `);
             console.log(`已更新日期为 ${date} 的日报`);
           } catch (updateError) {
             // 返回成功但记录错误
@@ -263,12 +266,13 @@ exports.handler = async function(event, context) {
           try {
             // 创建新日报
             console.log(`创建日期为 ${date} 的新日报`);
-            result = await client.query(
-              q.Create(
-                q.Collection('reports'),
-                { data: reportData }
-              )
-            );
+            result = await client.query(fql`
+              reports.create({
+                date: ${date},
+                weekday: ${weekday},
+                content: ${content}
+              })
+            `);
             console.log(`已创建日期为 ${date} 的日报`);
           } catch (createError) {
             // 返回成功但记录错误
@@ -328,14 +332,14 @@ exports.handler = async function(event, context) {
         
         try {
           // 查找日报
-          const reportRef = await client.query(
-            q.Get(q.Match(q.Index('reports_by_date'), date))
-          );
+          const reportRef = await client.query(fql`
+            reports.where(.data.date == ${date}).first()
+          `);
           
           // 删除日报
-          await client.query(
-            q.Delete(reportRef.ref)
-          );
+          await client.query(fql`
+            reports.byId(${reportRef.id}).delete()
+          `);
           
           console.log(`已删除日期为 ${date} 的日报`);
         } catch (deleteError) {
@@ -351,7 +355,7 @@ exports.handler = async function(event, context) {
             })
           };
         }
-        
+      
         return {
           statusCode: 200,
           headers,
@@ -392,4 +396,4 @@ exports.handler = async function(event, context) {
       })
     };
   }
-}; 
+};
