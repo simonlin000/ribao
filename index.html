@@ -1172,7 +1172,10 @@
                     if (!response.ok) {
                         throw new Error('获取日报失败');
                     }
-                    return await response.json();
+                    const reports = await response.json();
+                    const reportsArray = Object.values(reports);
+                    console.log("Reports fetched successfully:", reports);
+                    return reportsArray ;
                 } catch (error) {
                     console.error('获取日报列表失败:', error);
                     return {};
@@ -1248,6 +1251,17 @@
                 }
             }
         };
+
+        function formatDate(dateString) {
+                const date = new Date(dateString);
+                const year = date.getFullYear();
+                const month = date.getMonth() + 1;
+                const day = date.getDate();
+                const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+                const weekday = weekdays[date.getDay()];
+                
+                return `${year}年${month}月${day}日 (${weekday})`;
+            }
         
         // 页面加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
@@ -1354,7 +1368,7 @@
                 reportDateInput.value = today.toISOString().split('T')[0];
                 
                 // 初始化报告存储
-                initializeReports();
+                // initializeReports();
                 
                 // 检查并更新密码（如果是新的一天）
                 updateDailyPasswordIfNeeded();
@@ -1759,9 +1773,10 @@
                         
                         // 如果当前正在查看被删除的日报，则切换到默认日报
                         if (currentViewingReportDate === selectedDate) {
-                            loadReportContent("2025-03-26");
-                            currentViewingReportDate = "2025-03-26";
-                            updateActiveDayItem("2025-03-26");
+                            const defaultDate = "2025-03-26";
+                            loadReportContent(defaultDate);
+                            currentViewingReportDate = defaultDate;
+                            updateActiveDayItem(defaultDate);
                         }
                         
                         const deleteAlert = document.createElement('div');
@@ -2024,6 +2039,69 @@
                     dynamicPasswordInput.value = localStorage.getItem('dynamicPassword') || '';
                 }
             }
+
+             // 更新侧边栏日报列表
+            function updateSidebarReportList() {
+                try {
+                    console.log("开始更新侧边栏日报列表");
+                    
+                    // 获取侧边栏的3月份日期列表元素
+                    const marchDaysList = document.getElementById('march-days');
+                    if (!marchDaysList) {
+                        console.error("找不到marchDaysList元素，无法更新侧边栏");
+                        return;
+                    }
+                    
+                    // 显示加载中
+                    marchDaysList.innerHTML = '<li class="loading">加载中...</li>';
+                    
+                    // 获取所有报告
+                    apiService.getAllReports()
+                        .then(reports => {
+                            // 清空现有列表
+                            marchDaysList.innerHTML = '';
+                            if (!reports) {
+                                console.log("没有找到日报: " + reports);
+                                marchDaysList.innerHTML = '<li class="no-reports">没有找到日报</li>';
+                                return;
+                            }
+                            // 确保按日期排序（最新的在前面）
+                            reports.sort((a, b) => new Date(b.date) - new Date(a.date));
+                            
+                            // 创建可点击的日期列表
+                            reports.forEach(report => {
+                                const listItem = document.createElement('li');
+                                if (report.date === currentViewingReportDate) {
+                                    listItem.className = 'selected';
+                                }
+                                
+                                // 提取日期中的日
+                                const day = new Date(report.date).getDate();
+                                
+                                listItem.innerHTML = `<span>${day}日</span>`;
+                                listItem.addEventListener('click', () => loadReportContent(report.date));
+                                marchDaysList.appendChild(listItem);
+                            });
+                            
+                            console.log("侧边栏日报列表更新完成");
+                        })
+                        .catch(error => {
+                            console.error("获取日报列表失败:", error);
+                            marchDaysList.innerHTML = '<li class="error">加载失败</li>';
+                            
+                            // 即使加载失败，也确保当前报告在侧边栏中显示
+                            if (currentViewingReportDate) {
+                                const day = new Date(currentViewingReportDate).getDate();
+                                const listItem = document.createElement('li');
+                                listItem.className = 'selected';
+                                listItem.innerHTML = `<span>${day}日</span>`;
+                                marchDaysList.appendChild(listItem);
+                            }
+                        });
+                } catch (error) {
+                    console.error("更新侧边栏时发生错误:", error);
+                }
+            }
             
             // 显示主内容
             function showMainContent(isAdmin) {
@@ -2091,70 +2169,7 @@
                 }
             }
             
-            // 更新侧边栏日报列表
-            function updateSidebarReportList() {
-                try {
-                    console.log("开始更新侧边栏日报列表");
-                    
-                    // 获取侧边栏的3月份日期列表元素
-                    const marchDaysList = document.getElementById('marchDaysList');
-                    if (!marchDaysList) {
-                        console.error("找不到marchDaysList元素，无法更新侧边栏");
-                        return;
-                    }
-                    
-                    // 显示加载中
-                    marchDaysList.innerHTML = '<li class="loading">加载中...</li>';
-                    
-                    // 获取所有报告
-                    apiService.getAllReports()
-                        .then(reports => {
-                            // 清空现有列表
-                            marchDaysList.innerHTML = '';
-                            
-                            // 如果没有报告或报告为空数组
-                            if (!reports || !reports.length) {
-                                marchDaysList.innerHTML = '<li class="no-reports">没有找到日报</li>';
-                                return;
-                            }
-                            
-                            // 确保按日期排序（最新的在前面）
-                            reports.sort((a, b) => new Date(b.date) - new Date(a.date));
-                            
-                            // 创建可点击的日期列表
-                            reports.forEach(report => {
-                                const listItem = document.createElement('li');
-                                if (report.date === currentViewingReportDate) {
-                                    listItem.className = 'selected';
-                                }
-                                
-                                // 提取日期中的日
-                                const day = new Date(report.date).getDate();
-                                
-                                listItem.innerHTML = `<span>${day}日</span>`;
-                                listItem.addEventListener('click', () => loadReportContent(report.date));
-                                marchDaysList.appendChild(listItem);
-                            });
-                            
-                            console.log("侧边栏日报列表更新完成");
-                        })
-                        .catch(error => {
-                            console.error("获取日报列表失败:", error);
-                            marchDaysList.innerHTML = '<li class="error">加载失败</li>';
-                            
-                            // 即使加载失败，也确保当前报告在侧边栏中显示
-                            if (currentViewingReportDate) {
-                                const day = new Date(currentViewingReportDate).getDate();
-                                const listItem = document.createElement('li');
-                                listItem.className = 'selected';
-                                listItem.innerHTML = `<span>${day}日</span>`;
-                                marchDaysList.appendChild(listItem);
-                            }
-                        });
-                } catch (error) {
-                    console.error("更新侧边栏时发生错误:", error);
-                }
-            }
+           
             
             // 加载日报列表到管理员面板
             function loadReportsList() {
@@ -2378,7 +2393,7 @@
                     }
                     
                     // 更新侧边栏选中状态
-                    const allDayItems = document.querySelectorAll('#marchDaysList li');
+                    const allDayItems = document.querySelectorAll('#march-days li');
                     allDayItems.forEach(item => item.classList.remove('selected'));
                     
                     const targetDayItem = Array.from(allDayItems).find(item => {
@@ -2416,7 +2431,7 @@
                         
                         // 更新侧边栏选中状态
                         try {
-                            const allDayItems = document.querySelectorAll('#marchDaysList li');
+                            const allDayItems = document.querySelectorAll('#march-days li');
                             allDayItems.forEach(item => item.classList.remove('selected'));
                             
                             const targetDay = new Date(date).getDate();
@@ -2489,18 +2504,6 @@
                         <p>这里可以添加一些额外的信息或备注事项</p>
                     </div>
                 `;
-            }
-            
-            // 格式化日期显示
-            function formatDate(dateString) {
-                const date = new Date(dateString);
-                const year = date.getFullYear();
-                const month = date.getMonth() + 1;
-                const day = date.getDate();
-                const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-                const weekday = weekdays[date.getDay()];
-                
-                return `${year}年${month}月${day}日 (${weekday})`;
             }
             
             // 搜索报告
@@ -2699,7 +2702,7 @@
         }
         
         // 在页面加载完毕后自动执行测试
-        setTimeout(testShowDefaultReport, 2000);
+        // setTimeout(testShowDefaultReport, 2000);
     </script>
 </body>
 </html>
