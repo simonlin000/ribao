@@ -1161,10 +1161,6 @@
             // API基本路径
             baseUrl: '/api',
             
-            // 管理员凭据 - 全局常量
-            ADMIN_USERNAME: "simon912",
-            ADMIN_PASSWORD: "dabao0123",
-            
             // 获取所有日报
             async getAllReports() {
                 try {
@@ -1203,7 +1199,15 @@
             async saveReport(date, content) {
                 try {
                     // 获取管理员凭据
-                    const credentials = `${this.ADMIN_USERNAME}:${this.ADMIN_PASSWORD}`;
+                    const username = document.getElementById('adminUsername').value;
+                    const password = document.getElementById('adminPassword').value;
+                    
+                    // 如果没有输入框值，从localStorage尝试获取
+                    const savedUsername = localStorage.getItem('adminUsername');
+                    const savedPassword = localStorage.getItem('adminPassword');
+                    
+                    // 使用可用的凭据
+                    const credentials = `${username || savedUsername}:${password || savedPassword}`;
                     const encodedCredentials = btoa(credentials);
                     
                     const response = await fetch(`${this.baseUrl}/reports`, {
@@ -1230,7 +1234,15 @@
             async deleteReport(date) {
                 try {
                     // 获取管理员凭据
-                    const credentials = `${this.ADMIN_USERNAME}:${this.ADMIN_PASSWORD}`;
+                    const username = document.getElementById('adminUsername').value;
+                    const password = document.getElementById('adminPassword').value;
+                    
+                    // 如果没有输入框值，从localStorage尝试获取
+                    const savedUsername = localStorage.getItem('adminUsername');
+                    const savedPassword = localStorage.getItem('adminPassword');
+                    
+                    // 使用可用的凭据
+                    const credentials = `${username || savedUsername}:${password || savedPassword}`;
                     const encodedCredentials = btoa(credentials);
                     
                     const response = await fetch(`${this.baseUrl}/reports/${date}`, {
@@ -1984,17 +1996,45 @@
             }
             
             // 处理管理员登录逻辑
-            function processAdminLogin(username, password) {
+            async function processAdminLogin(username, password) {
                 console.log("验证管理员凭据...");
-                // 验证管理员凭据
-                if (username === apiService.ADMIN_USERNAME && password === apiService.ADMIN_PASSWORD) {
+                
+                // 禁用登录按钮，防止重复点击
+                adminLoginBtn.disabled = true;
+                
+                try {
+                    // 创建一个临时的Base64编码的凭据
+                    const credentials = `${username}:${password}`;
+                    const encodedCredentials = btoa(credentials);
+                    
+                    // 尝试使用这些凭据调用API进行验证
+                    const response = await fetch(`${apiService.baseUrl}/reports`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Basic ${encodedCredentials}`
+                        }
+                    });
+                    
+                    // 如果API返回成功，认为验证成功
+                    if (response.ok) {
                     console.log("管理员登录成功!");
+                        
+                        // 保存凭据到localStorage（仅在成功时）
+                        localStorage.setItem('adminUsername', username);
+                        localStorage.setItem('adminPassword', password);
+                        
                     // 登录成功
                     loginSuccess(true);
                 } else {
-                    console.log("管理员登录失败: 凭据不匹配");
-                    // 登录失败
+                        console.log("管理员登录失败: API认证失败");
                     loginFailed('admin');
+                    }
+                } catch (error) {
+                    console.error("管理员登录过程中出错:", error);
+                    loginFailed('admin');
+                } finally {
+                    // 恢复登录按钮
+                    adminLoginBtn.disabled = false;
                 }
             }
             

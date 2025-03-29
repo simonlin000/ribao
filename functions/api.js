@@ -15,8 +15,8 @@ const DEFAULT_REPORT = {
   content: '<div class="section"><h2>AI自媒体创造营日报</h2><p>欢迎来到AI自媒体创造营日报馆！这里收录了创造营的每日动态和精彩内容。</p></div>'
 };
 
-// 简单的身份验证函数
-const authenticate = (event) => {
+// 从数据库验证的身份验证函数
+const authenticate = async (event) => {
   const authHeader = event.headers.authorization;
   
   if (!authHeader) {
@@ -28,8 +28,22 @@ const authenticate = (event) => {
   const credentials = Buffer.from(base64Credentials, 'base64').toString('utf8');
   const [username, password] = credentials.split(':');
   
-  // 检查用户名和密码是否匹配
-  return username === 'simon912' && password === 'dabao0123';
+  try {
+    // 从数据库中查找用户
+    console.log(`尝试验证用户: ${username}`);
+    const result = await client.query(fql`
+      let user = users.where(.data.username == ${username}).first()
+      user
+    `);
+    
+    // 验证密码
+    const isValid = result.data.password === password;
+    console.log(`用户验证${isValid ? '成功' : '失败'}`);
+    return isValid;
+  } catch (error) {
+    console.error('身份验证失败:', error);
+    return false;
+  }
 };
 
 // 确保数据库结构存在的函数
@@ -193,7 +207,9 @@ exports.handler = async function(event, context) {
     
     // 处理 POST /reports - 保存日报（需要认证）
     if (event.httpMethod === 'POST' && path === '/reports') {
-      if (!authenticate(event)) {
+      // 使用await调用异步的认证函数
+      const isAuthenticated = await authenticate(event);
+      if (!isAuthenticated) {
         return {
           statusCode: 401,
           headers,
@@ -310,7 +326,9 @@ exports.handler = async function(event, context) {
     
     // 处理 DELETE /reports/:date - 删除日报（需要认证）
     if (event.httpMethod === 'DELETE' && path.startsWith('/reports/')) {
-      if (!authenticate(event)) {
+      // 使用await调用异步的认证函数
+      const isAuthenticated = await authenticate(event);
+      if (!isAuthenticated) {
         return {
           statusCode: 401,
           headers,
@@ -369,6 +387,64 @@ exports.handler = async function(event, context) {
           headers,
           body: JSON.stringify({ 
             message: '删除日报失败', 
+            error: error.message || '未知错误',
+            code: error.name
+          })
+        };
+      }
+    }
+    
+    // 处理 PUT /admin/password - 更新管理员密码（需要认证）
+    if (event.httpMethod === 'PUT' && path === '/admin/password') {
+      // 使用await调用异步的认证函数
+      const isAuthenticated = await authenticate(event);
+      if (!isAuthenticated) {
+        return {
+          statusCode: 401,
+          headers,
+          body: JSON.stringify({ message: '认证失败' })
+        };
+      }
+      
+      const { username, newPassword } = JSON.parse(event.body);
+      
+      if (!username || !newPassword) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ message: '用户名和新密码不能为空' })
+        };
+      }
+      
+      try {
+        // 查找用户
+        console.log(`尝试查找用户: ${username}`);
+        const userResult = await client.query(fql`
+          let user = users.where(.data.username == ${username}).first()
+          user
+        `);
+        
+        // 更新密码
+        console.log(`更新用户 ${username} 的密码`);
+        await client.query(fql`
+          users.byId(${userResult.id}).update({
+            password: ${newPassword}
+          })
+        `);
+        
+        console.log(`用户 ${username} 的密码已成功更新`);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ message: '密码已更新' })
+        };
+      } catch (error) {
+        console.error('更新密码失败:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ 
+            message: '更新密码失败', 
             error: error.message || '未知错误',
             code: error.name
           })
