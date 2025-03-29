@@ -72,21 +72,18 @@ const ensureDefaultReport = async () => {
           console.log('已创建默认日报');
           return true;
         } catch (createError) {
-          // 移除特定错误检查，总是返回成功
-          console.error('由于账户限制，无法自动创建默认日报。请在FaunaDB中手动创建。');
-          // 为了不阻止应用程序运行，假装成功
-          return true;
+          // 不再假装成功，而是抛出实际错误
+          console.error('创建默认日报失败:', createError);
+          throw createError;
         }
       } else {
         console.error('检查默认日报时出错:', error);
-        // 为了不阻止应用程序运行，假装成功
-        return true;
+        throw error;
       }
     }
   } catch (error) {
     console.error('处理默认日报时出错:', error);
-    // 为了不阻止应用程序运行，假装成功
-    return true;
+    throw error;
   }
 };
 
@@ -243,7 +240,20 @@ exports.handler = async function(event, context) {
           );
           existingRef = existingReport.ref;
         } catch (err) {
-          // 忽略错误，继续执行
+          // 记录错误但继续执行
+          console.log(`查找日期为 ${date} 的现有日报时出错:`, err);
+          // 不再忽略错误，而是记录错误类型
+          if (err.name !== 'NotFound') {
+            return {
+              statusCode: 500,
+              headers,
+              body: JSON.stringify({ 
+                message: '查询现有日报失败', 
+                error: err.message || '未知错误', 
+                code: err.name
+              })
+            };
+          }
         }
         
         let result;
@@ -258,9 +268,17 @@ exports.handler = async function(event, context) {
             );
             console.log(`已更新日期为 ${date} 的日报`);
           } catch (updateError) {
-            // 忽略错误，假装成功
-            console.error('更新日报失败，但继续执行:', updateError);
-            result = { data: reportData };
+            // 返回实际错误而不是假装成功
+            console.error('更新日报失败:', updateError);
+            return {
+              statusCode: 500,
+              headers,
+              body: JSON.stringify({ 
+                message: '更新日报失败', 
+                error: updateError.message || '未知错误',
+                code: updateError.name
+              })
+            };
           }
         } else {
           try {
@@ -273,9 +291,18 @@ exports.handler = async function(event, context) {
             );
             console.log(`已创建日期为 ${date} 的日报`);
           } catch (createError) {
-            // 忽略错误，假装成功
-            console.error('创建日报失败，但继续执行:', createError);
-            result = { data: reportData };
+            // 返回实际错误而不是假装成功
+            console.error('创建日报失败:', createError);
+            return {
+              statusCode: 500,
+              headers,
+              body: JSON.stringify({ 
+                message: '创建日报失败', 
+                error: createError.message || '未知错误',
+                code: createError.name,
+                details: JSON.stringify(createError)
+              })
+            };
           }
         }
         
@@ -287,13 +314,15 @@ exports.handler = async function(event, context) {
       } catch (error) {
         console.error('保存日报失败:', error);
         
-        // 即使出错也返回成功
+        // 修改：返回实际错误而不是假装成功
         return {
-          statusCode: 200,
+          statusCode: 500,
           headers,
           body: JSON.stringify({ 
-            message: '日报已保存到本地（FaunaDB连接有问题）', 
-            report: reportData
+            message: '保存日报失败', 
+            error: error.message || '未知错误',
+            code: error.name,
+            details: JSON.stringify(error)
           })
         };
       }
@@ -334,8 +363,17 @@ exports.handler = async function(event, context) {
           
           console.log(`已删除日期为 ${date} 的日报`);
         } catch (deleteError) {
-          // 忽略删除错误，假装成功
-          console.error('删除日报失败，但继续执行:', deleteError);
+          // 返回实际错误而不是假装成功
+          console.error('删除日报失败:', deleteError);
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ 
+              message: '删除日报失败', 
+              error: deleteError.message || '未知错误',
+              code: deleteError.name
+            })
+          };
         }
         
         return {
@@ -344,12 +382,16 @@ exports.handler = async function(event, context) {
           body: JSON.stringify({ message: '日报删除成功' })
         };
       } catch (error) {
-        // 任何错误都返回成功
+        // 返回实际错误而不是假装成功
         console.error('删除日报整体操作失败:', error);
         return {
-          statusCode: 200,
+          statusCode: 500,
           headers,
-          body: JSON.stringify({ message: '日报删除成功（本地操作）' })
+          body: JSON.stringify({ 
+            message: '删除日报失败', 
+            error: error.message || '未知错误',
+            code: error.name
+          })
         };
       }
     }
@@ -364,13 +406,14 @@ exports.handler = async function(event, context) {
   } catch (error) {
     console.error('处理请求失败:', error);
     
-    // 返回一个通用的成功响应而不是错误
+    // 修改：返回实际错误而不是通用成功响应
     return {
-      statusCode: 200,
+      statusCode: 500,
       headers,
       body: JSON.stringify({ 
-        message: '请求已处理，但可能未完全保存到数据库',
-        note: '由于FaunaDB账户限制，此应用程序以离线模式运行' 
+        message: '服务器内部错误', 
+        error: error.message || '未知错误',
+        code: error.name
       })
     };
   }
