@@ -2475,6 +2475,53 @@
                 }, 100);
             }
             
+            // 检查是否已存在登录信息
+            function checkExistingLogin() {
+                console.log("检查已有登录状态...");
+                
+                // 检查localStorage中的登录状态
+                const isLoggedIn = localStorage.getItem('isLoggedIn');
+                const userIsAdmin = localStorage.getItem('isAdmin') === 'true';
+                
+                console.log("从本地存储读取登录状态: " + isLoggedIn);
+                
+                if (isLoggedIn === 'true') {
+                    console.log("用户已登录，显示主内容");
+                    userAuthenticated = true;
+                    showMainContent(userIsAdmin);
+                    
+                    // 如果是管理员，尝试恢复管理员凭据
+                    if (userIsAdmin) {
+                        // 初始化日报日期输入为今天
+                        const today = new Date();
+                        if (reportDateInput) {
+                            reportDateInput.value = today.toISOString().split('T')[0];
+                        }
+                        
+                        // 加载日报日期列表
+                        loadReportsList();
+                    }
+                } else {
+                    console.log("用户未登录，显示登录界面");
+                    showLoginScreen();
+                }
+            }
+            
+            // 初始化访客密码
+            function initializeDynamicPassword() {
+                // 如果尚未设置动态密码，则设置默认密码
+                if (!localStorage.getItem('dynamicPassword')) {
+                    const today = getFormattedDate();
+                    const defaultPassword = generateDailyPassword(today);
+                    localStorage.setItem('dynamicPassword', defaultPassword);
+                    localStorage.setItem('lastPasswordUpdate', today);
+                    console.log("设置初始密码: " + defaultPassword);
+                }
+                
+                // 检查并更新密码（如果是新的一天）
+                updateDailyPasswordIfNeeded();
+            }
+            
             // 检查并更新每日密码（如果是新的一天）
             function updateDailyPasswordIfNeeded() {
                 const today = getFormattedDate();
@@ -2491,8 +2538,6 @@
                     }
                 }
             }
-            
-           
             
             // 加载日报列表到管理员面板
             function loadReportsList() {
