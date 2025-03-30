@@ -1060,10 +1060,46 @@
                     <label for="reportDate">日报日期</label>
                     <input type="date" id="reportDate" value="">
                 </div>
+                
                 <div class="form-group">
+                    <label>日报格式</label>
+                    <div class="format-selector">
+                        <label>
+                            <input type="radio" name="reportFormat" value="html" checked> HTML格式
+                        </label>
+                        <label>
+                            <input type="radio" name="reportFormat" value="json"> JSON格式
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group html-editor">
                     <label for="reportContentTextarea">日报HTML内容</label>
                     <textarea id="reportContentTextarea" placeholder="粘贴日报HTML内容或使用编辑器"></textarea>
                 </div>
+                
+                <div class="form-group json-editor" style="display:none;">
+                    <label for="jsonContentTextarea">日报JSON内容</label>
+                    <textarea id="jsonContentTextarea" placeholder='{
+  "title": "AI自媒体创造营日报",
+  "date": "YYYY-MM-DD",
+  "sections": [
+    {
+      "type": "header",
+      "content": "今日重点"
+    },
+    {
+      "type": "paragraph",
+      "content": "今天的主要内容..."
+    }
+  ]
+}'></textarea>
+                    <div class="json-helper">
+                        <button id="validateJsonBtn">验证JSON</button>
+                        <span id="jsonValidationResult"></span>
+                    </div>
+                </div>
+                
                 <button id="saveReportBtn">保存日报</button>
                 <button id="viewReportBtn">预览当前日报</button>
                 <div class="admin-success" id="reportSuccess">日报已成功保存！</div>
@@ -1196,7 +1232,7 @@
             },
             
             // 保存日报（需要认证）
-            async saveReport(date, content) {
+            async saveReport(date, content, format = 'html') {
                 try {
                     // 获取管理员凭据
                     const username = document.getElementById('adminUsername').value;
@@ -1216,7 +1252,7 @@
                             'Content-Type': 'application/json',
                             'Authorization': `Basic ${encodedCredentials}`
                         },
-                        body: JSON.stringify({ date, content })
+                        body: JSON.stringify({ date, content, format })
                     });
                     
                     if (!response.ok) {
@@ -1563,6 +1599,8 @@
             
             // 设置所有事件监听器
             function setupEventListeners() {
+                console.log("设置事件监听器...");
+                
                 // 切换到管理员登录
                 showAdminAuthLink.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -1657,14 +1695,46 @@
                 // 预览日报按钮
                 viewReportBtn.addEventListener('click', function() {
                     const reportDate = reportDateInput.value;
-                    const reportContent = reportContentTextarea.value.trim();
+                    let reportContent = '';
+                    let isJsonFormat = false;
+                    
+                    // 确定当前选中的格式
+                    const formatRadios = document.querySelectorAll('input[name="reportFormat"]');
+                    let selectedFormat = 'html';
+                    formatRadios.forEach(radio => {
+                        if (radio.checked) {
+                            selectedFormat = radio.value;
+                        }
+                    });
+                    
+                    // 根据选择的格式获取内容
+                    if (selectedFormat === 'html') {
+                        reportContent = reportContentTextarea.value.trim();
+                    } else {
+                        const jsonContent = document.getElementById('jsonContentTextarea').value.trim();
+                        
+                        // 验证JSON格式
+                        try {
+                            JSON.parse(jsonContent);
+                            reportContent = jsonContent;
+                            isJsonFormat = true;
+                        } catch (e) {
+                            reportError.textContent = "JSON格式错误: " + e.message;
+                            reportError.style.display = 'block';
+                            setTimeout(() => {
+                                reportError.style.display = 'none';
+                                reportError.textContent = "预览失败，请确保内容格式正确。";
+                            }, 3000);
+                            return;
+                        }
+                    }
                     
                     if (!reportDate || !reportContent) {
                         reportError.textContent = "请先输入日期和内容";
                         reportError.style.display = 'block';
                         setTimeout(() => {
                             reportError.style.display = 'none';
-                            reportError.textContent = "保存失败，请确保内容格式正确。";
+                            reportError.textContent = "预览失败，请确保内容格式正确。";
                         }, 3000);
                         return;
                     }
@@ -1672,8 +1742,20 @@
                     // 临时预览（不保存）
                     const dateObj = new Date(reportDate);
                     const formattedDate = formatDate(reportDate);
-                    document.querySelector('.header .date').textContent = formattedDate;
-                    document.getElementById('reportContent').innerHTML = reportContent;
+                    const contentContainer = document.getElementById('reportContent');
+                    
+                    // 根据格式选择渲染方式
+                    if (isJsonFormat) {
+                        contentContainer.innerHTML = renderJSONReport(reportContent);
+                    } else {
+                        contentContainer.innerHTML = reportContent;
+                    }
+                    
+                    // 更新日期显示
+                    const dateElement = document.querySelector('.header .date');
+                    if (dateElement) {
+                        dateElement.textContent = formattedDate;
+                    }
                     
                     // 移动端优化
                     if (window.innerWidth <= 900) {
@@ -1703,31 +1785,66 @@
                 });
                 
                 // 保存日报
-                saveReportBtn.addEventListener('click', function() {
+                saveReportBtn.addEventListener('click', async function() {
                     const reportDate = reportDateInput.value;
-                    const reportContent = reportContentTextarea.value.trim();
+                    let reportContent = '';
+                    let isJsonFormat = false;
+                    
+                    // 确定当前选中的格式
+                    const formatRadios = document.querySelectorAll('input[name="reportFormat"]');
+                    let selectedFormat = 'html';
+                    formatRadios.forEach(radio => {
+                        if (radio.checked) {
+                            selectedFormat = radio.value;
+                        }
+                    });
+                    
+                    // 根据选择的格式获取内容
+                    if (selectedFormat === 'html') {
+                        reportContent = reportContentTextarea.value.trim();
+                    } else {
+                        const jsonContent = document.getElementById('jsonContentTextarea').value.trim();
+                        
+                        // 验证JSON格式
+                        try {
+                            JSON.parse(jsonContent);
+                            reportContent = jsonContent;
+                            isJsonFormat = true;
+                        } catch (e) {
+                            reportError.textContent = "JSON格式错误: " + e.message;
+                            reportError.style.display = 'block';
+                            setTimeout(() => {
+                                reportError.style.display = 'none';
+                                reportError.textContent = "保存失败，请确保内容格式正确。";
+                            }, 3000);
+                            return;
+                        }
+                    }
                     
                     if (!reportDate || !reportContent) {
+                        reportError.textContent = "请先输入日期和内容";
                         reportError.style.display = 'block';
                         setTimeout(() => {
                             reportError.style.display = 'none';
+                            reportError.textContent = "保存失败，请确保内容格式正确。";
                         }, 3000);
                         return;
                     }
                     
                     try {
-                        saveReport(reportDate, reportContent);
+                        // 保存日报
+                        await saveReport(reportDate, reportContent, isJsonFormat ? 'json' : 'html');
                         
-                        // 设置当前查看的日期为新保存的日期
-                        currentViewingReportDate = reportDate;
+                        // 显示成功消息
+                        reportSuccess.style.display = 'block';
+                        setTimeout(() => {
+                            reportSuccess.style.display = 'none';
+                        }, 3000);
                         
-                        // 立即显示新保存的内容
-                        loadReportContent(reportDate);
+                        // 刷新侧边栏
+                        updateSidebarReportList();
                         
-                        // 更新侧边栏活动项
-                        updateActiveDayItem(reportDate);
-                        
-                        // 显示成功提示作为弹窗
+                        // 显示成功弹窗
                         const successAlert = document.createElement('div');
                         successAlert.style.position = 'fixed';
                         successAlert.style.top = '50%';
@@ -1738,7 +1855,7 @@
                         successAlert.style.color = '#7bed9f';
                         successAlert.style.borderRadius = '8px';
                         successAlert.style.zIndex = '9999';
-                        successAlert.textContent = "日报已成功保存！";
+                        successAlert.textContent = "日报保存成功！";
                         document.body.appendChild(successAlert);
                         
                         setTimeout(() => {
@@ -1747,6 +1864,7 @@
                         
                         // 清空表单
                         reportContentTextarea.value = '';
+                        document.getElementById('jsonContentTextarea').value = '';
                         
                         // 关闭管理面板以便查看内容
                         adminPanel.style.display = 'none';
@@ -1812,28 +1930,57 @@
                 
                 // 编辑日报
                 editReportBtn.addEventListener('click', function() {
-                    console.log("点击编辑按钮");
                     const selectedDate = existingReportsSelect.value;
-                    if (!selectedDate) {
-                        console.log("未选择日期");
-                        return;
-                    }
+                    if (!selectedDate) return;
                     
-                    console.log("选择的日期:", selectedDate);
-                    const reports = JSON.parse(localStorage.getItem('reports') || '{}');
-                    const report = reports[selectedDate];
-                    
+                    apiService.getReport(selectedDate)
+                        .then(report => {
                     if (report) {
                         console.log("找到报告，填充表单");
                         // 设置日期
                         reportDateInput.value = selectedDate;
+                                
+                                // 检查内容格式
+                                let isJsonFormat = false;
+                                if (report.format === 'json' || isJSONContent(report.content)) {
+                                    isJsonFormat = true;
+                                }
+                                
+                                // 根据格式选择编辑器和填充内容
+                                const formatRadios = document.querySelectorAll('input[name="reportFormat"]');
+                                formatRadios.forEach(radio => {
+                                    if (radio.value === (isJsonFormat ? 'json' : 'html')) {
+                                        radio.checked = true;
+                                    }
+                                });
+                                
+                                // 切换编辑器
+                                toggleEditorFormat(isJsonFormat ? 'json' : 'html');
                         
                         // 设置报告内容
                         if (report.content) {
+                                    if (isJsonFormat) {
+                                        // 如果是JSON格式，美化显示
+                                        let jsonContent = report.content;
+                                        if (typeof jsonContent === 'string') {
+                                            try {
+                                                const jsonObj = JSON.parse(jsonContent);
+                                                jsonContent = JSON.stringify(jsonObj, null, 2);
+                                            } catch (e) {
+                                                console.error("JSON解析失败:", e);
+                                            }
+                                        } else if (typeof jsonContent === 'object') {
+                                            jsonContent = JSON.stringify(jsonContent, null, 2);
+                                        }
+                                        document.getElementById('jsonContentTextarea').value = jsonContent;
+                                    } else {
+                                        // HTML格式
                             reportContentTextarea.value = report.content;
+                                    }
                         } else {
                             console.log("报告内容为空");
                             reportContentTextarea.value = '';
+                                    document.getElementById('jsonContentTextarea').value = '';
                         }
                         
                         // 切换到日报管理选项卡（以防用户在其他选项卡）
@@ -1859,6 +2006,16 @@
                             reportError.textContent = '保存失败，请确保内容格式正确。';
                         }, 3000);
                     }
+                        })
+                        .catch(error => {
+                            console.error("加载日报失败:", error);
+                            reportError.textContent = "加载日报失败: " + error.message;
+                            reportError.style.display = 'block';
+                            setTimeout(() => {
+                                reportError.style.display = 'none';
+                                reportError.textContent = '保存失败，请确保内容格式正确。';
+                            }, 3000);
+                        });
                 });
                 
                 // 选择已有日报时
@@ -1955,6 +2112,57 @@
                         const query = this.value.toLowerCase();
                         searchReports(query);
                     });
+                }
+                
+                // 添加新的JSON格式处理
+                // 监听格式切换
+                const formatRadios = document.querySelectorAll('input[name="reportFormat"]');
+                formatRadios.forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        const format = this.value;
+                        toggleEditorFormat(format);
+                    });
+                });
+                
+                // JSON验证按钮
+                const validateJsonBtn = document.getElementById('validateJsonBtn');
+                if (validateJsonBtn) {
+                    validateJsonBtn.addEventListener('click', function() {
+                        const jsonTextarea = document.getElementById('jsonContentTextarea');
+                        const validationResult = document.getElementById('jsonValidationResult');
+                        
+                        if (!jsonTextarea || !validationResult) return;
+                        
+                        try {
+                            const jsonContent = jsonTextarea.value.trim();
+                            if (!jsonContent) {
+                                validationResult.textContent = '请输入JSON内容';
+                                validationResult.style.color = '#ff6b6b';
+                                return;
+                            }
+                            
+                            JSON.parse(jsonContent);
+                            validationResult.textContent = 'JSON格式正确 ✓';
+                            validationResult.style.color = '#7bed9f';
+                        } catch (e) {
+                            validationResult.textContent = 'JSON格式错误: ' + e.message;
+                            validationResult.style.color = '#ff6b6b';
+                        }
+                    });
+                }
+            }
+            
+            // 切换编辑器格式
+            function toggleEditorFormat(format) {
+                const htmlEditor = document.querySelector('.html-editor');
+                const jsonEditor = document.querySelector('.json-editor');
+                
+                if (format === 'html') {
+                    htmlEditor.style.display = 'block';
+                    jsonEditor.style.display = 'none';
+                } else if (format === 'json') {
+                    htmlEditor.style.display = 'none';
+                    jsonEditor.style.display = 'block';
                 }
             }
             
@@ -2255,8 +2463,8 @@
             }
             
             // 保存日报
-            function saveReport(date, content) {
-                console.log(`保存日期为 ${date} 的报告`);
+            function saveReport(date, content, format = 'html') {
+                console.log(`保存日期为 ${date} 的报告，格式: ${format}`);
                 
                 // 确保界面显示成功消息，不依赖于API结果
                 reportSuccess.style.display = 'block';
@@ -2277,8 +2485,13 @@
                         headerContent = headerElement.outerHTML;
                     }
                     
+                    // 根据格式选择渲染方式
+                    if (format === 'json') {
+                        contentContainer.innerHTML = renderJSONReport(content);
+                    } else {
                     // 更新内容
                     contentContainer.innerHTML = content;
+                    }
                     
                     // 恢复header如果需要
                     if (headerContent && !contentContainer.querySelector('.header')) {
@@ -2306,7 +2519,8 @@
                 }
                 
                 // 使用API服务保存到后端
-                apiService.saveReport(date, content)
+                // 添加格式参数
+                apiService.saveReport(date, content, format)
                     .then(response => {
                         console.log('日报保存成功:', response);
                         
@@ -2455,8 +2669,30 @@
                         document.getElementById('loadingIndicator').style.display = 'none';
                         
                         if (report && report.content) {
-                            // 报告存在且有内容，更新显示
+                            // 检查是否是JSON格式的内容
+                            let isJsonFormat = false;
+                            
+                            // 检查content是否为JSON对象或格式的字符串
+                            if (isJSONContent(report.content)) {
+                                isJsonFormat = true;
+                                console.log("检测到JSON格式的日报内容");
+                            }
+                            
+                            // 根据内容格式选择渲染方式
+                            if (isJsonFormat) {
+                                // 渲染JSON格式的内容
+                                contentContainer.innerHTML = renderJSONReport(report.content);
+                            } else {
+                                // 普通HTML内容，直接显示
                             contentContainer.innerHTML = report.content;
+                            }
+                            
+                            // 检查是否需要添加format标记，以支持编辑
+                            if (report.format === 'json') {
+                                contentContainer.setAttribute('data-format', 'json');
+                            } else {
+                                contentContainer.setAttribute('data-format', 'html');
+                            }
                         } else {
                             // 报告不存在或内容为空，创建默认内容
                             const defaultContent = createDefaultReportContent(date);
@@ -2609,6 +2845,184 @@
                 return false;
             }
             
+            // 检测内容是否为JSON格式
+            function isJSONContent(content) {
+                if (typeof content === 'object') return true;
+                
+                if (typeof content !== 'string') return false;
+                
+                // 尝试解析字符串为JSON
+                try {
+                    const trimmed = content.trim();
+                    // 如果以{开始且以}结束，或以[开始且以]结束，可能是JSON
+                    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
+                        (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+                        JSON.parse(trimmed);
+                        return true;
+                    }
+                    return false;
+                } catch (e) {
+                    return false;
+                }
+            }
+            
+            // 将JSON格式的日报渲染为HTML
+            function renderJSONReport(jsonContent) {
+                console.log("渲染JSON格式日报", jsonContent);
+                
+                // 如果是字符串形式的JSON，先解析为对象
+                let reportData = jsonContent;
+                if (typeof jsonContent === 'string') {
+                    try {
+                        reportData = JSON.parse(jsonContent);
+                    } catch (e) {
+                        console.error("JSON解析失败:", e);
+                        return `<div class="error-message">
+                            <h2>JSON格式错误</h2>
+                            <p>无法解析日报内容。请确保JSON格式正确。</p>
+                            <pre>${jsonContent}</pre>
+                        </div>`;
+                    }
+                }
+                
+                // 生成HTML头部
+                let html = `<div class="header">
+                    <h1>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v2h-2zm0 4h2v6h-2z"/></svg>
+                        ${reportData.title || 'AI自媒体创造营日报'}
+                    </h1>
+                    <div class="date">${formatDate(reportData.date)}</div>
+                </div>`;
+                
+                // 处理内容部分
+                if (reportData.sections && Array.isArray(reportData.sections)) {
+                    // 处理多个部分
+                    reportData.sections.forEach(section => {
+                        html += renderSection(section);
+                    });
+                } else if (reportData.content) {
+                    // 简单的内容字段
+                    html += `<div class="section">
+                        <p>${reportData.content}</p>
+                    </div>`;
+                } else {
+                    // 无法识别的结构
+                    html += `<div class="section">
+                        <h2>日报内容</h2>
+                        <p>此日报使用JSON格式，但结构不包含sections或content字段。</p>
+                    </div>`;
+                }
+                
+                // 添加JSON源数据查看按钮
+                html += `<div class="json-source-container">
+                    <button class="json-view-btn" onclick="toggleJsonSource(this)">查看JSON源代码</button>
+                    <pre class="json-source" style="display:none;">${JSON.stringify(reportData, null, 2)}</pre>
+                </div>`;
+                
+                return html;
+            }
+            
+            // 切换JSON源代码显示/隐藏
+            function toggleJsonSource(button) {
+                const pre = button.nextElementSibling;
+                if (pre.style.display === 'none') {
+                    pre.style.display = 'block';
+                    button.textContent = '隐藏JSON源代码';
+                } else {
+                    pre.style.display = 'none';
+                    button.textContent = '查看JSON源代码';
+                }
+            }
+            
+            // 渲染单个部分
+            function renderSection(section) {
+                if (!section) return '';
+                
+                let html = '<div class="section">';
+                
+                // 处理不同类型的部分
+                switch (section.type) {
+                    case 'header':
+                        html += `<h2>${section.content || ''}</h2>`;
+                        break;
+                        
+                    case 'subheader':
+                        html += `<h3>${section.content || ''}</h3>`;
+                        break;
+                        
+                    case 'paragraph':
+                        html += `<p>${section.content || ''}</p>`;
+                        break;
+                        
+                    case 'image':
+                        html += `<div class="image-container">
+                            <img src="${section.url || ''}" alt="${section.caption || ''}">
+                            ${section.caption ? `<div class="caption">${section.caption}</div>` : ''}
+                        </div>`;
+                        break;
+                        
+                    case 'list':
+                        if (section.items && Array.isArray(section.items)) {
+                            html += '<ul>';
+                            section.items.forEach(item => {
+                                html += `<li>${item}</li>`;
+                            });
+                            html += '</ul>';
+                        }
+                        break;
+                        
+                    case 'quote':
+                        html += `<blockquote>${section.content || ''}</blockquote>`;
+                        break;
+                        
+                    case 'code':
+                        html += `<pre><code>${section.content || ''}</code></pre>`;
+                        break;
+                        
+                    case 'table':
+                        if (section.data && Array.isArray(section.data)) {
+                            html += '<table><tbody>';
+                            section.data.forEach(row => {
+                                html += '<tr>';
+                                if (Array.isArray(row)) {
+                                    row.forEach(cell => {
+                                        html += `<td>${cell}</td>`;
+                                    });
+                                }
+                                html += '</tr>';
+                            });
+                            html += '</tbody></table>';
+                        }
+                        break;
+                        
+                    case 'summary-item':
+                        html += `<div class="summary-item">
+                            <h3>${section.title || ''}</h3>
+                            <p>${section.content || ''}</p>
+                        </div>`;
+                        break;
+                        
+                    default:
+                        // 如果没有类型或类型不匹配，尝试以通用方式处理
+                        if (section.title) {
+                            html += `<h3>${section.title}</h3>`;
+                        }
+                        if (section.content) {
+                            html += `<p>${section.content}</p>`;
+                        }
+                }
+                
+                // 如果有子部分，递归处理
+                if (section.children && Array.isArray(section.children)) {
+                    section.children.forEach(child => {
+                        html += renderSection(child);
+                    });
+                }
+                
+                html += '</div>';
+                return html;
+            }
+            
             // 初始化应用
             initialize();
         });
@@ -2703,7 +3117,7 @@
                     <h2>AI自媒体创造营日报</h2>
                     <p>欢迎来到AI自媒体创造营日报馆！这里收录了创造营的每日动态和精彩内容。</p>
                     <p>这是一个自定义的默认日报内容，如果您看到这段文字，说明默认日报已成功加载。</p>
-                    <p style="color: #ff6b6b; font-weight: bold; font-size: 18px;">这是一段测试日报文字。如果您能看到我，说明日报系统工作正常！</p>
+                    <p style="color: #ff6b6b; font-weight: bold; font-size: 18px;">这是一段醒目的红色文字用于测试。如果您能看到我，说明日报系统工作正常！</p>
                 </div>`;
             
             // 检查元素存在

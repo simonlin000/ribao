@@ -217,8 +217,8 @@ exports.handler = async function(event, context) {
         };
       }
       
-    const { date, content } = JSON.parse(event.body);
-      console.log(`尝试保存日期为 ${date} 的日报`);
+    const { date, content, format } = JSON.parse(event.body);
+      console.log(`尝试保存日期为 ${date} 的日报，格式: ${format || 'html'}`);
       
       if (!date || !content) {
         return {
@@ -235,7 +235,8 @@ exports.handler = async function(event, context) {
       const reportData = {
         date,
         weekday,
-        content
+        content,
+        format: format || 'html' // 添加格式字段
       };
       
       try {
@@ -257,12 +258,13 @@ exports.handler = async function(event, context) {
         if (existingRef) {
           try {
             // 更新现有日报
-            console.log(`更新日期为 ${date} 的日报`);
+            console.log(`更新日期为 ${date} 的日报，格式: ${format || 'html'}`);
             result = await client.query(fql`
               reports.byId(${existingRef.id}).update({
                 date: ${date},
                 weekday: ${weekday},
-                content: ${content}
+                content: ${content},
+                format: ${format || 'html'}
               })
             `);
             console.log(`已更新日期为 ${date} 的日报`);
@@ -281,12 +283,13 @@ exports.handler = async function(event, context) {
         } else {
           try {
             // 创建新日报
-            console.log(`创建日期为 ${date} 的新日报`);
+            console.log(`创建日期为 ${date} 的新日报，格式: ${format || 'html'}`);
             result = await client.query(fql`
               reports.create({
                 date: ${date},
                 weekday: ${weekday},
-                content: ${content}
+                content: ${content},
+                format: ${format || 'html'}
               })
             `);
             console.log(`已创建日期为 ${date} 的日报`);
