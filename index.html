@@ -440,6 +440,7 @@
             box-sizing: border-box;
         }
         
+        /* 主内容样式中添加视图切换按钮 */
         .content-container {
             width: 900px;
             margin: 20px auto;
@@ -450,6 +451,128 @@
             border: 1px solid #444;
             color: var(--text-light);
             box-sizing: border-box;
+            position: relative;
+        }
+        
+        /* 视图切换控件 */
+        .view-toggle {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 3px;
+            z-index: 100;
+        }
+        
+        .view-toggle button {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .view-toggle button.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        /* 卡片视图样式 */
+        .card-view {
+            display: none;
+            width: 100%;
+            min-height: 400px;
+            position: relative;
+        }
+        
+        .card-view.active {
+            display: block;
+        }
+        
+        .card-view .card-container {
+            width: 100%;
+            position: relative;
+            min-height: 400px;
+            overflow: hidden;
+        }
+        
+        .card-view .card {
+            width: 100%;
+            background: rgba(40, 40, 50, 0.9);
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+        
+        .card-view .card h2 {
+            color: var(--secondary-color);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        
+        .card-view .card-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .card-view .nav-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        
+        .card-view .nav-button:hover {
+            background: #4a52e0;
+        }
+        
+        .card-view .nav-button:disabled {
+            background: #3a3a48;
+            color: #888;
+            cursor: not-allowed;
+        }
+        
+        .card-view .card-indicator {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .card-view .indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #555;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+        
+        .card-view .indicator-dot.active {
+            background: var(--primary-color);
+            transform: scale(1.2);
+        }
+        
+        /* 完整视图样式 */
+        .full-view {
+            display: block;
+        }
+        
+        .full-view.inactive {
+            display: none;
         }
         
         /* Original report content styles */
@@ -2828,7 +2951,10 @@
                 // 对于固定的示例日期，直接使用默认内容
                 if (date === '2025-03-26') {
                     const defaultContent = createDefaultReportContent(date);
-                    contentContainer.innerHTML = defaultContent;
+                    
+                    // 使用新的渲染方法替代直接设置innerHTML
+                    renderDualViewReport(contentContainer, defaultContent, false);
+                    
                     document.getElementById('loadingIndicator').style.display = 'none';
                     
                     // 优化移动端显示
@@ -2868,14 +2994,8 @@
                                 console.log("检测到JSON格式的日报内容");
                             }
                             
-                            // 根据内容格式选择渲染方式
-                            if (isJsonFormat) {
-                                // 渲染JSON格式的内容
-                                contentContainer.innerHTML = renderJSONReport(report.content);
-                            } else {
-                                // 普通HTML内容，直接显示
-                            contentContainer.innerHTML = report.content;
-                            }
+                            // 使用新的渲染方法替代直接设置innerHTML
+                            renderDualViewReport(contentContainer, report.content, isJsonFormat);
                             
                             // 检查是否需要添加format标记，以支持编辑
                             if (report.format === 'json') {
@@ -2886,7 +3006,7 @@
                         } else {
                             // 报告不存在或内容为空，创建默认内容
                             const defaultContent = createDefaultReportContent(date);
-                            contentContainer.innerHTML = defaultContent;
+                            renderDualViewReport(contentContainer, defaultContent, false);
                             console.log("没有找到报告内容，已创建默认内容");
                         }
                         
@@ -2927,6 +3047,353 @@
                             </div>
                         `;
                     });
+            }
+            
+            // 渲染双视图报告（完整视图和卡片视图）
+            function renderDualViewReport(container, content, isJson) {
+                // 清空容器
+                container.innerHTML = '';
+                
+                // 创建视图切换按钮
+                const viewToggle = document.createElement('div');
+                viewToggle.className = 'view-toggle';
+                viewToggle.innerHTML = `
+                    <button class="full-view-btn active" data-view="full">完整视图</button>
+                    <button class="card-view-btn" data-view="card">卡片视图</button>
+                `;
+                container.appendChild(viewToggle);
+                
+                // 创建两个视图容器
+                const fullView = document.createElement('div');
+                fullView.className = 'full-view';
+                
+                const cardView = document.createElement('div');
+                cardView.className = 'card-view';
+                
+                // 将视图容器添加到主容器
+                container.appendChild(fullView);
+                container.appendChild(cardView);
+                
+                // 渲染完整视图内容
+                if (isJson) {
+                    fullView.innerHTML = renderJSONReport(content);
+                } else {
+                    fullView.innerHTML = content;
+                }
+                
+                // 渲染卡片视图内容
+                renderCardView(cardView, content, isJson);
+                
+                // 设置视图切换事件
+                viewToggle.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const view = this.getAttribute('data-view');
+                        
+                        // 更新按钮状态
+                        viewToggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        // 切换视图
+                        if (view === 'full') {
+                            fullView.classList.remove('inactive');
+                            cardView.classList.remove('active');
+                        } else {
+                            fullView.classList.add('inactive');
+                            cardView.classList.add('active');
+                        }
+                    });
+                });
+            }
+            
+            // 渲染卡片视图
+            function renderCardView(container, content, isJson) {
+                let sections = [];
+                
+                // 从内容中提取各个部分
+                if (isJson) {
+                    // 解析JSON内容
+                    let jsonData = content;
+                    if (typeof content === 'string') {
+                        try {
+                            jsonData = JSON.parse(content);
+                        } catch (e) {
+                            console.error('解析JSON失败:', e);
+                            container.innerHTML = '<div class="error">无法解析JSON内容</div>';
+                            return;
+                        }
+                    }
+                    
+                    // 提取JSON中的各个部分
+                    if (jsonData.sections && Array.isArray(jsonData.sections)) {
+                        jsonData.sections.forEach(section => {
+                            sections.push({
+                                title: section.title || (section.type === 'header' ? '标题' : '内容'),
+                                content: extractSectionContent(section)
+                            });
+                        });
+                    } else {
+                        // 找不到sections结构，尝试其他结构
+                        if (jsonData.title || jsonData.reportTitle) {
+                            sections.push({
+                                title: jsonData.title || jsonData.reportTitle,
+                                content: '日报标题'
+                            });
+                        }
+                        
+                        // 处理单独的内容
+                        if (jsonData.content) {
+                            sections.push({
+                                title: '内容',
+                                content: jsonData.content
+                            });
+                        }
+                    }
+                } else {
+                    // 处理HTML内容
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = content;
+                    
+                    // 查找所有section元素
+                    const sectionElements = tempDiv.querySelectorAll('.section');
+                    if (sectionElements.length > 0) {
+                        sectionElements.forEach(section => {
+                        const titleEl = section.querySelector('h2');
+                        const title = titleEl ? titleEl.textContent : '未命名部分';
+                        
+                            // 复制section内容，但移除h2标题
+                            const sectionCopy = section.cloneNode(true);
+                            const titleInCopy = sectionCopy.querySelector('h2');
+                            if (titleInCopy) {
+                                titleInCopy.remove();
+                            }
+                            
+                            sections.push({
+                            title: title,
+                                content: sectionCopy.innerHTML
+                            });
+                        });
+                    } else {
+                        // 如果找不到section元素，尝试提取header
+                        const header = tempDiv.querySelector('.header');
+                        if (header) {
+                            sections.push({
+                                title: '标题',
+                                content: header.innerHTML
+                            });
+                            
+                            // 移除header后的其余内容
+                            header.remove();
+                            if (tempDiv.innerHTML.trim()) {
+                                sections.push({
+                                    title: '内容',
+                                    content: tempDiv.innerHTML
+                                });
+                            }
+                        } else {
+                            // 没有结构，整体作为一个部分
+                            sections.push({
+                                title: '日报内容',
+                                content: content
+                            });
+                        }
+                    }
+                }
+                
+                // 如果没有找到任何部分，显示默认信息
+                if (sections.length === 0) {
+                    sections.push({
+                        title: '日报内容',
+                        content: '未找到可分段的内容'
+                    });
+                }
+                
+                // 创建卡片
+                const cardContainer = document.createElement('div');
+                cardContainer.className = 'card-container';
+                
+                // 添加卡片内容
+                sections.forEach((section, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <h2>${section.title}</h2>
+                        <div class="card-content">${section.content}</div>
+                    `;
+                    cardContainer.appendChild(card);
+                });
+                
+                // 添加卡片导航
+                const cardNavigation = document.createElement('div');
+                cardNavigation.className = 'card-navigation';
+                cardNavigation.innerHTML = `
+                    <button class="nav-button prev-btn" ${sections.length <= 1 ? 'disabled' : ''}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        上一张
+                    </button>
+                    <div class="card-counter">1/${sections.length}</div>
+                    <button class="nav-button next-btn" ${sections.length <= 1 ? 'disabled' : ''}>
+                        下一张
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                `;
+                
+                // 添加指示点
+                const cardIndicator = document.createElement('div');
+                cardIndicator.className = 'card-indicator';
+                
+                for (let i = 0; i < sections.length; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = i === 0 ? 'indicator-dot active' : 'indicator-dot';
+                    dot.setAttribute('data-index', i);
+                    cardIndicator.appendChild(dot);
+                }
+                
+                // 添加元素到容器
+                container.appendChild(cardContainer);
+                container.appendChild(cardNavigation);
+                container.appendChild(cardIndicator);
+                
+                // 保存当前卡片索引
+                container.setAttribute('data-current-card', '0');
+                
+                // 初始只显示第一张卡片
+                const cards = cardContainer.querySelectorAll('.card');
+                if (cards.length > 1) {
+                    for (let i = 1; i < cards.length; i++) {
+                        cards[i].style.display = 'none';
+                    }
+                }
+                
+                // 设置导航事件
+                setupCardNavigation(container, sections.length);
+            }
+            
+            // 设置卡片导航事件
+            function setupCardNavigation(container, totalCards) {
+                if (totalCards <= 1) return; // 只有一张卡片不需要导航
+                
+                const prevBtn = container.querySelector('.prev-btn');
+                const nextBtn = container.querySelector('.next-btn');
+                const indicators = container.querySelectorAll('.indicator-dot');
+                const cardCounter = container.querySelector('.card-counter');
+                
+                // 上一张按钮点击事件
+                prevBtn.addEventListener('click', function() {
+                    navigateCards(container, -1, totalCards);
+                });
+                
+                // 下一张按钮点击事件
+                nextBtn.addEventListener('click', function() {
+                    navigateCards(container, 1, totalCards);
+                });
+                
+                // 指示点点击事件
+                indicators.forEach(dot => {
+                    dot.addEventListener('click', function() {
+                        const targetIndex = parseInt(this.getAttribute('data-index'));
+                        const currentIndex = parseInt(container.getAttribute('data-current-card'));
+                        navigateToCard(container, targetIndex, currentIndex, totalCards);
+                    });
+                });
+                
+                // 添加触摸滑动支持
+                const cardContainer = container.querySelector('.card-container');
+                let touchStartX = 0;
+                let touchEndX = 0;
+                
+                cardContainer.addEventListener('touchstart', function(e) {
+                    touchStartX = e.changedTouches[0].screenX;
+                }, { passive: true });
+                
+                cardContainer.addEventListener('touchend', function(e) {
+                    touchEndX = e.changedTouches[0].screenX;
+                    handleSwipe();
+                }, { passive: true });
+                
+                function handleSwipe() {
+                    const swipeThreshold = 50; // 滑动阈值
+                    if (touchEndX < touchStartX - swipeThreshold) {
+                        // 左滑 -> 下一张
+                        navigateCards(container, 1, totalCards);
+                    }
+                    if (touchEndX > touchStartX + swipeThreshold) {
+                        // 右滑 -> 上一张
+                        navigateCards(container, -1, totalCards);
+                    }
+                }
+            }
+            
+            // 根据偏移量导航卡片
+            function navigateCards(container, offset, totalCards) {
+                const currentIndex = parseInt(container.getAttribute('data-current-card'));
+                // 计算新索引，确保循环导航
+                const newIndex = (currentIndex + offset + totalCards) % totalCards;
+                navigateToCard(container, newIndex, currentIndex, totalCards);
+            }
+            
+            // 导航到特定卡片
+            function navigateToCard(container, targetIndex, currentIndex, totalCards) {
+                // 如果目标索引等于当前索引，不做任何操作
+                if (targetIndex === currentIndex) return;
+                
+                const cards = container.querySelectorAll('.card');
+                const indicators = container.querySelectorAll('.indicator-dot');
+                const cardCounter = container.querySelector('.card-counter');
+                
+                // 隐藏当前卡片
+                cards[currentIndex].style.display = 'none';
+                indicators[currentIndex].classList.remove('active');
+                
+                // 显示目标卡片
+                cards[targetIndex].style.display = 'block';
+                indicators[targetIndex].classList.add('active');
+                
+                // 更新计数器
+                cardCounter.textContent = `${targetIndex + 1}/${totalCards}`;
+                
+                // 更新当前卡片索引
+                container.setAttribute('data-current-card', targetIndex);
+            }
+            
+            // 从JSON section提取内容
+            function extractSectionContent(section) {
+                if (!section) return '';
+                
+                // 如果有直接的content字段
+                if (section.content) {
+                    return section.content;
+                }
+                
+                // 处理不同类型的内容
+                if (section.type === 'header') {
+                    return `<h3>${section.content || ''}</h3>`;
+                } else if (section.type === 'paragraph') {
+                    return `<p>${section.content || ''}</p>`;
+                } else if (section.items && Array.isArray(section.items)) {
+                    // 处理项目列表
+                    let content = '<ul>';
+                    section.items.forEach(item => {
+                        if (typeof item === 'string') {
+                            content += `<li>${item}</li>`;
+                        } else if (typeof item === 'object') {
+                            let itemContent = '';
+                            if (item.title) itemContent += `<strong>${item.title}</strong>: `;
+                            if (item.content) itemContent += item.content;
+                            if (item.summary) itemContent += item.summary;
+                            if (item.message) itemContent += item.message;
+                            content += `<li>${itemContent}</li>`;
+                        }
+                    });
+                    content += '</ul>';
+                    return content;
+                }
+                
+                // 未知类型，将对象转为JSON字符串
+                return `<pre>${JSON.stringify(section, null, 2)}</pre>`;
             }
             
             // 创建默认的报告内容
