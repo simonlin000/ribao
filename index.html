@@ -55,28 +55,20 @@
                                         if (typeof item === 'string') {
                                             itemsContent += `<li>${item}</li>`;
                                         } else if (typeof item === 'object') {
-                                            itemsContent += `<li>${JSON.stringify(item)}</li>`;
+                                            itemsContent += `<li>${objectToHTML(item)}</li>`;
                                         }
                                     });
                                     itemsContent += '</ul>';
                                     
                                     sections.push({
-                                        title: key.charAt(0).toUpperCase() + key.slice(1),
+                                        title: formatFieldName(key),
                                         content: itemsContent
                                     });
                                 } else if (typeof jsonData[key] === 'object') {
-                                    // 递归处理嵌套对象
-                                    let objContent = '<div class="nested-object">';
-                                    for (const nestedKey in jsonData[key]) {
-                                        if (typeof jsonData[key][nestedKey] === 'string') {
-                                            objContent += `<p><strong>${nestedKey}:</strong> ${jsonData[key][nestedKey]}</p>`;
-                                        }
-                                    }
-                                    objContent += '</div>';
-                                    
+                                    // 递归处理嵌套对象，使用objectToHTML
                                     sections.push({
-                                        title: key.charAt(0).toUpperCase() + key.slice(1),
-                                        content: objContent
+                                        title: formatFieldName(key),
+                                        content: objectToHTML(jsonData[key])
                                     });
                                 }
                             }
@@ -297,80 +289,122 @@
             function extractSectionContent(section) {
                 if (!section) return '';
                 
-                // 如果有直接的content字段
-                if (section.content) {
-                    return section.content;
-                }
-                
-                // 处理不同类型的内容
-                if (section.type === 'header') {
-                    return `<h3>${section.content || ''}</h3>`;
-                } else if (section.type === 'paragraph') {
-                    return `<p>${section.content || ''}</p>`;
-                } else if (section.type === 'tutorials_and_news' && section.subSections) {
-                    // 教程和新闻特殊处理
-                    let content = '';
-                    if (Array.isArray(section.subSections)) {
-                        section.subSections.forEach(subSection => {
-                            if (subSection.subTitle) {
-                                content += `<h4>${subSection.subTitle}</h4>`;
-                            }
-                            
-                            if (subSection.items && Array.isArray(subSection.items)) {
-                                content += '<ul>';
-                                subSection.items.forEach(item => {
-                                    if (typeof item === 'string') {
-                                        content += `<li>${item}</li>`;
-                                    } else if (typeof item === 'object') {
-                                        let itemText = '';
-                                        if (item.source) itemText += `<strong>${item.source}</strong>: `;
-                                        if (item.description) itemText += item.description;
-                                        content += `<li>${itemText}</li>`;
-                                    }
-                                });
-                                content += '</ul>';
+                try {
+                    // 如果有直接的content字段
+                    if (section.content) {
+                        return section.content;
+                    }
+                    
+                    // 处理不同类型的内容
+                    if (section.type === 'header') {
+                        return `<h3>${section.content || ''}</h3>`;
+                    } else if (section.type === 'paragraph') {
+                        return `<p>${section.content || ''}</p>`;
+                    } else if (section.type === 'tutorials_and_news' && section.subSections) {
+                        // 教程和新闻特殊处理
+                        let html = '<div class="tutorials-news">';
+                        
+                        if (Array.isArray(section.subSections)) {
+                            section.subSections.forEach(subSection => {
+                                if (subSection.subTitle) {
+                                    html += `<h4>${subSection.subTitle}</h4>`;
+                                }
+                                
+                                if (subSection.items && Array.isArray(subSection.items)) {
+                                    html += '<ul class="tutorial-items">';
+                                    subSection.items.forEach(item => {
+                                        if (typeof item === 'string') {
+                                            html += `<li>${item}</li>`;
+                                        } else if (typeof item === 'object') {
+                                            let itemHTML = '<li>';
+                                            if (item.source) itemHTML += `<strong>${item.source}</strong>: `;
+                                            if (item.description) itemHTML += item.description;
+                                            
+                                            // 处理链接
+                                            if (item.link) {
+                                                if (typeof item.link === 'string') {
+                                                    itemHTML += ` <a href="${item.link}" target="_blank">链接</a>`;
+                                                } else if (typeof item.link === 'object' && item.link.url) {
+                                                    itemHTML += ` <a href="${item.link.url}" target="_blank">${item.link.text || '链接'}</a>`;
+                                                }
+                                            }
+                                            
+                                            itemHTML += '</li>';
+                                            html += itemHTML;
+                                        }
+                                    });
+                                    html += '</ul>';
+                                }
+                            });
+                        }
+                        
+                        html += '</div>';
+                        return html;
+                    } else if (section.items && Array.isArray(section.items)) {
+                        // 处理项目列表
+                        let html = '<ul>';
+                        section.items.forEach(item => {
+                            if (typeof item === 'string') {
+                                html += `<li>${item}</li>`;
+                            } else if (typeof item === 'object') {
+                                let itemHTML = '<li>';
+                                
+                                if (item.title) itemHTML += `<strong>${item.title}</strong>: `;
+                                if (item.content) itemHTML += item.content;
+                                if (item.summary) itemHTML += item.summary;
+                                if (item.message) itemHTML += item.message;
+                                if (item.source) itemHTML += `<strong>${item.source}</strong>: `;
+                                if (item.description) itemHTML += item.description;
+                                
+                                itemHTML += '</li>';
+                                html += itemHTML;
                             }
                         });
+                        html += '</ul>';
+                        return html;
                     }
-                    return content;
-                } else if (section.items && Array.isArray(section.items)) {
-                    // 处理项目列表
-                    let content = '<ul>';
-                    section.items.forEach(item => {
-                        if (typeof item === 'string') {
-                            content += `<li>${item}</li>`;
-                        } else if (typeof item === 'object') {
-                            let itemContent = '';
-                            if (item.title) itemContent += `<strong>${item.title}</strong>: `;
-                            if (item.content) itemContent += item.content;
-                            if (item.summary) itemContent += item.summary;
-                            if (item.message) itemContent += item.message;
-                            if (item.source) itemContent += `<strong>${item.source}</strong>: `;
-                            if (item.description) itemContent += item.description;
-                            content += `<li>${itemContent}</li>`;
+                    
+                    // 对于其他类型，提取有用信息
+                    let contentHTML = '<div class="section-details">';
+                    let hasContent = false;
+                    
+                    // 遍历所有字段，尝试提取有用内容
+                    for (const key in section) {
+                        if (key === 'type' || key === 'icon') continue;
+                        
+                        if (typeof section[key] === 'string') {
+                            contentHTML += `<p><strong>${formatFieldName(key)}:</strong> ${section[key]}</p>`;
+                            hasContent = true;
+                        } else if (Array.isArray(section[key])) {
+                            contentHTML += `<p><strong>${formatFieldName(key)}:</strong></p>`;
+                            contentHTML += objectToHTML(section[key]);
+                            hasContent = true;
+                        } else if (typeof section[key] === 'object' && section[key] !== null) {
+                            contentHTML += `<p><strong>${formatFieldName(key)}:</strong></p>`;
+                            contentHTML += objectToHTML(section[key]);
+                            hasContent = true;
                         }
-                    });
-                    content += '</ul>';
-                    return content;
-                }
-                
-                // 其他类型，尝试提取有用信息而不是显示原始JSON
-                let content = '';
-                for (const key in section) {
-                    if (typeof section[key] === 'string' && key !== 'type' && key !== 'icon') {
-                        content += `<p><strong>${key}:</strong> ${section[key]}</p>`;
                     }
-                }
-                
-                // 如果没有提取到有用信息，返回格式化的JSON
-                if (!content) {
-                    return `<div class="formatted-json">
-                        <p>格式化内容：</p>
-                        <pre>${JSON.stringify(section, null, 2)}</pre>
+                    
+                    contentHTML += '</div>';
+                    
+                    if (hasContent) {
+                        return contentHTML;
+                    }
+                    
+                    // 如果没有提取到内容，返回格式化的HTML视图而不是原始JSON
+                    return `<div class="formatted-content">
+                        <p>内容概览：</p>
+                        <div class="content-preview">${objectToHTML(section)}</div>
+                    </div>`;
+                } catch (error) {
+                    console.error('处理部分内容时出错:', error);
+                    return `<div class="error-content">
+                        <p>处理内容时出错: ${error.message}</p>
+                        <button onclick="toggleJsonSource(this)" class="json-toggle-btn">查看原始数据</button>
+                        <pre style="display: none;">${JSON.stringify(section, null, 2)}</pre>
                     </div>`;
                 }
-                
-                return content;
             }
             
             // 切换JSON源代码显示/隐藏
@@ -383,6 +417,66 @@
                     pre.style.display = 'none';
                     button.textContent = '查看JSON源代码';
                 }
+            }
+            
+            // 格式化字段名称为更友好的显示格式
+            function formatFieldName(key) {
+                // 将下划线和驼峰格式转换为空格分隔的标题格式
+                let formatted = key
+                    // 插入空格在小写后面跟大写的情况
+                    .replace(/([a-z])([A-Z])/g, '$1 $2')
+                    // 替换下划线和连字符为空格
+                    .replace(/[_-]/g, ' ');
+                
+                // 首字母大写
+                return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+            }
+            
+            // 安全地将对象转换为HTML显示，避免直接显示JSON代码
+            function objectToHTML(obj) {
+                if (!obj || typeof obj !== 'object') {
+                    return String(obj || '');
+                }
+                
+                // 处理数组
+                if (Array.isArray(obj)) {
+                    if (obj.length === 0) return '<i>(空数组)</i>';
+                    
+                    let html = '<ul class="object-list">';
+                    obj.forEach(item => {
+                        if (typeof item === 'string') {
+                            html += `<li>${item}</li>`;
+                        } else if (typeof item === 'object' && item !== null) {
+                            // 递归处理
+                            html += `<li>${objectToHTML(item)}</li>`;
+                        } else {
+                            html += `<li>${String(item)}</li>`;
+                        }
+                    });
+                    html += '</ul>';
+                    return html;
+                }
+                
+                // 处理对象
+                const keys = Object.keys(obj);
+                if (keys.length === 0) return '<i>(空对象)</i>';
+                
+                let html = '<div class="object-props">';
+                keys.forEach(key => {
+                    const value = obj[key];
+                    const formattedKey = formatFieldName(key);
+                    
+                    if (typeof value === 'string') {
+                        html += `<div><strong>${formattedKey}:</strong> ${value}</div>`;
+                    } else if (typeof value === 'object' && value !== null) {
+                        html += `<div><strong>${formattedKey}:</strong> ${objectToHTML(value)}</div>`;
+                    } else {
+                        html += `<div><strong>${formattedKey}:</strong> ${String(value)}</div>`;
+                    }
+                });
+                html += '</div>';
+                
+                return html;
             }
             
             // 初始化应用
