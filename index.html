@@ -974,6 +974,49 @@
         .error-message button:hover {
             background-color: #b71c1c;
         }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+        
+        /* 侧边栏日报列表样式增强 */
+        #march-days li {
+            cursor: pointer;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        #march-days li:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(3px);
+        }
+        
+        #march-days li.selected {
+            background: rgba(90, 97, 255, 0.25);
+            border-left: 3px solid var(--primary-color);
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        #march-days li.selected span {
+            color: #ffffff;
+        }
+        
+        #march-days li span {
+            color: var(--text-light);
+            font-size: 15px;
+        }
+        
+        #march-days li:active {
+            transform: translateX(5px) scale(0.98);
+            background: rgba(90, 97, 255, 0.35);
+        }
     </style>
 </head>
 <body>
@@ -2402,7 +2445,29 @@
                                 const day = new Date(report.date).getDate();
                                 
                                 listItem.innerHTML = `<span>${day}日</span>`;
-                                listItem.addEventListener('click', () => loadReportContent(report.date));
+                                listItem.addEventListener('click', function() {
+                                    // 移除所有选中状态
+                                    const allItems = marchDaysList.querySelectorAll('li');
+                                    allItems.forEach(item => item.classList.remove('selected'));
+                                    
+                                    // 添加选中样式
+                                    this.classList.add('selected');
+                                    
+                                    // 加载对应的日报内容
+                                    loadReportContent(report.date);
+                                    
+                                    // 添加动画效果
+                                    this.style.animation = 'pulse 0.3s';
+                                    setTimeout(() => {
+                                        this.style.animation = '';
+                                    }, 300);
+                                    
+                                    // 移动端环境下，点击日期后自动隐藏侧边栏，显示内容
+                                    if (window.innerWidth <= 900) {
+                                        document.getElementById('sidebar').classList.remove('active');
+                                        document.querySelector('.main-content').style.display = 'block';
+                                    }
+                                });
                                 marchDaysList.appendChild(listItem);
                             });
                             
