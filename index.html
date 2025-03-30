@@ -2885,20 +2885,43 @@
                     }
                 }
                 
+                // 支持替代字段名
+                const title = reportData.title || reportData.reportTitle || 'AI自媒体创造营日报';
+                let date = reportData.date || '';
+                if (reportData.reportDate && !date) {
+                    // 尝试从reportDate提取日期，如果格式是"YYYY年MM月DD日"之类的
+                    const dateMatch = reportData.reportDate.match(/(\d{4})[\u4e00-\u9fa5](\d{1,2})[\u4e00-\u9fa5](\d{1,2})/);
+                    if (dateMatch) {
+                        date = `${dateMatch[1]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[3].padStart(2, '0')}`;
+                    } else {
+                        // 尝试另一种常见格式
+                        const dateMatch2 = reportData.reportDate.match(/(\d{4}-\d{2}-\d{2})/);
+                        if (dateMatch2) {
+                            date = dateMatch2[1];
+                        }
+                    }
+                }
+                
+                // 如果没有提取到日期，使用当前日期
+                if (!date) {
+                    const today = new Date();
+                    date = today.toISOString().split('T')[0];
+                }
+                
                 // 生成HTML头部
                 let html = `<div class="header">
                     <h1>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v2h-2zm0 4h2v6h-2z"/></svg>
-                        ${reportData.title || 'AI自媒体创造营日报'}
+                        ${title}
                     </h1>
-                    <div class="date">${formatDate(reportData.date)}</div>
+                    <div class="date">${reportData.reportDate || formatDate(date)}</div>
                 </div>`;
                 
-                // 处理内容部分
+                // 处理内容部分 - 增强对复杂结构的支持
                 if (reportData.sections && Array.isArray(reportData.sections)) {
                     // 处理多个部分
                     reportData.sections.forEach(section => {
-                        html += renderSection(section);
+                        html += renderComplexSection(section);
                     });
                 } else if (reportData.content) {
                     // 简单的内容字段
@@ -2913,6 +2936,11 @@
                     </div>`;
                 }
                 
+                // 添加页脚
+                if (reportData.footer) {
+                    html += `<div class="footer">${reportData.footer}</div>`;
+                }
+                
                 // 添加JSON源数据查看按钮
                 html += `<div class="json-source-container">
                     <button class="json-view-btn" onclick="toggleJsonSource(this)">查看JSON源代码</button>
@@ -2922,16 +2950,185 @@
                 return html;
             }
             
-            // 切换JSON源代码显示/隐藏
-            function toggleJsonSource(button) {
-                const pre = button.nextElementSibling;
-                if (pre.style.display === 'none') {
-                    pre.style.display = 'block';
-                    button.textContent = '隐藏JSON源代码';
-                } else {
-                    pre.style.display = 'none';
-                    button.textContent = '查看JSON源代码';
+            // 渲染复杂的部分结构
+            function renderComplexSection(section) {
+                if (!section) return '';
+                
+                let html = '<div class="section">';
+                
+                // 添加部分标题
+                if (section.title) {
+                    html += `<h2>${section.icon || ''} ${section.title}</h2>`;
                 }
+                
+                // 处理不同类型的部分
+                if (section.type === 'header' && section.content) {
+                    // 简单的标题+内容格式
+                    html += `<p>${section.content}</p>`;
+                } else if (section.type === 'paragraph' && section.content) {
+                    // 简单的段落内容
+                    html += `<p>${section.content}</p>`;
+                } else if (section.type === 'hot_topics' && section.items && Array.isArray(section.items)) {
+                    // 热点话题结构
+                    section.items.forEach(item => {
+                        html += `<div class="topic-item">`;
+                        if (item.title) html += `<h3>${item.title}</h3>`;
+                        if (item.summary) html += `<p>${item.summary}</p>`;
+                        html += `</div>`;
+                    });
+                } else if (section.type === 'important_news' && section.items && Array.isArray(section.items)) {
+                    // 重要消息结构
+                    html += `<ul class="news-list">`;
+                    section.items.forEach(item => {
+                        html += `<li>`;
+                        if (item.timestamp) html += `<span class="timestamp">${item.timestamp}</span> `;
+                        if (item.source) html += `<span class="source">${item.source}:</span> `;
+                        if (item.message) html += item.message;
+                        if (item.link) html += ` <a href="${item.link}" target="_blank">链接</a>`;
+                        html += `</li>`;
+                    });
+                    html += `</ul>`;
+                    
+                    if (section.noNewsMessage) {
+                        html += `<p class="no-news">${section.noNewsMessage}</p>`;
+                    }
+                } else if (section.type === 'quotes' && section.items && Array.isArray(section.items)) {
+                    // 引用结构
+                    section.items.forEach(item => {
+                        html += `<div class="quote-item">`;
+                        if (item.conversation && Array.isArray(item.conversation)) {
+                            html += `<div class="conversation">`;
+                            item.conversation.forEach(message => {
+                                html += `<div class="message">`;
+                                if (message.author) html += `<span class="author">${message.author}:</span> `;
+                                if (message.text) html += message.text;
+                                html += `</div>`;
+                            });
+                            html += `</div>`;
+                        }
+                        if (item.comment) html += `<p class="comment">${item.comment}</p>`;
+                        html += `</div>`;
+                    });
+                } else if (section.type === 'q_and_a' && section.items && Array.isArray(section.items)) {
+                    // 问答结构
+                    section.items.forEach(item => {
+                        html += `<div class="qa-item">`;
+                        if (item.question) {
+                            html += `<div class="question">`;
+                            if (item.question.author) html += `<span class="author">${item.question.author}:</span> `;
+                            if (item.question.text) html += item.question.text;
+                            html += `</div>`;
+                        }
+                        if (item.answer) {
+                            html += `<div class="answer">`;
+                            if (item.answer.authors && Array.isArray(item.answer.authors)) {
+                                html += `<span class="authors">${item.answer.authors.join(', ')}:</span> `;
+                            }
+                            if (item.answer.text) html += item.answer.text;
+                            html += `</div>`;
+                        }
+                        html += `</div>`;
+                    });
+                } else if (section.type === 'tutorials_and_news' && section.subSections && Array.isArray(section.subSections)) {
+                    // 教程和新闻结构 - 处理子部分
+                    section.subSections.forEach(subSection => {
+                        if (subSection.subTitle) {
+                            html += `<h3>${subSection.icon || ''} ${subSection.subTitle}</h3>`;
+                        }
+                        
+                        if (subSection.items && Array.isArray(subSection.items)) {
+                            html += `<ul class="tutorial-list">`;
+                            subSection.items.forEach(item => {
+                                html += `<li>`;
+                                if (typeof item === 'string') {
+                                    // 简单的字符串项
+                                    html += item;
+                                } else if (typeof item === 'object') {
+                                    // 复杂的对象项
+                                    if (item.source) html += `<strong>${item.source}</strong>: `;
+                                    if (item.description) html += item.description;
+                                    
+                                    // 处理链接
+                                    if (item.link) {
+                                        if (typeof item.link === 'string') {
+                                            html += ` <a href="${item.link}" target="_blank">链接</a>`;
+                                        } else if (typeof item.link === 'object') {
+                                            html += ` <a href="${item.link.url}" target="_blank">${item.link.text || '链接'}</a>`;
+                                        } else if (Array.isArray(item.link)) {
+                                            item.link.forEach((link, index) => {
+                                                html += ` <a href="${link.url}" target="_blank">${link.text || `链接${index + 1}`}</a>`;
+                                            });
+                                        }
+                                    }
+                                }
+                                html += `</li>`;
+                            });
+                            html += `</ul>`;
+                        }
+                    });
+                } else if (section.type === 'visualization' && section.visualizations && Array.isArray(section.visualizations)) {
+                    // 可视化部分
+                    section.visualizations.forEach(viz => {
+                        html += `<div class="viz-item">`;
+                        if (viz.subTitle) html += `<h3>${viz.subTitle}</h3>`;
+                        
+                        if (viz.type === 'topic_heat' && viz.data && Array.isArray(viz.data)) {
+                            html += `<div class="topic-heat">`;
+                            viz.data.forEach(item => {
+                                const percentage = item.percentage || 50;
+                                html += `<div class="heat-item">
+                                    <span class="label">${item.label}</span>
+                                    <div class="bar-container">
+                                        <div class="bar" style="width: ${percentage}%"></div>
+                                    </div>
+                                    <span class="percentage">${percentage}%</span>
+                                </div>`;
+                            });
+                            html += `</div>`;
+                        } else if (viz.type === 'talkative_list' && viz.data && Array.isArray(viz.data)) {
+                            html += `<div class="talkative-list">`;
+                            viz.data.forEach(item => {
+                                html += `<div class="talkative-item">
+                                    <span class="rank">${item.rank}</span>
+                                    <span class="name">${item.name}</span>
+                                    <span class="description">${item.description}</span>
+                                </div>`;
+                            });
+                            html += `</div>`;
+                        } else if (viz.type === 'word_cloud' && viz.data && Array.isArray(viz.data)) {
+                            // 词云简化版展示 - 实际词云通常需要专门库
+                            html += `<div class="word-cloud">`;
+                            viz.data.forEach(item => {
+                                const size = (item.size || 1) * 100;
+                                html += `<span class="word" style="font-size: ${size}%">${item.text}</span> `;
+                            });
+                            html += `</div>`;
+                        }
+                        
+                        html += `</div>`;
+                    });
+                } else if (section.items && Array.isArray(section.items)) {
+                    // 通用项目列表渲染
+                    section.items.forEach(item => {
+                        if (typeof item === 'string') {
+                            html += `<p>${item}</p>`;
+                        } else if (typeof item === 'object') {
+                            html += `<div class="item">`;
+                            if (item.title) html += `<h3>${item.title}</h3>`;
+                            if (item.content || item.summary) html += `<p>${item.content || item.summary}</p>`;
+                            html += `</div>`;
+                        }
+                    });
+                } else if (section.content) {
+                    // 直接内容
+                    html += `<p>${section.content}</p>`;
+                } else {
+                    // 未能识别的部分类型
+                    html += `<p>未能识别的部分类型: ${section.type || '未指定'}</p>`;
+                }
+                
+                html += '</div>';
+                return html;
             }
             
             // 渲染单个部分
@@ -3021,6 +3218,18 @@
                 
                 html += '</div>';
                 return html;
+            }
+            
+            // 切换JSON源代码显示/隐藏
+            function toggleJsonSource(button) {
+                const pre = button.nextElementSibling;
+                if (pre.style.display === 'none') {
+                    pre.style.display = 'block';
+                    button.textContent = '隐藏JSON源代码';
+                } else {
+                    pre.style.display = 'none';
+                    button.textContent = '查看JSON源代码';
+                }
             }
             
             // 初始化应用
