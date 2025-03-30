@@ -2426,24 +2426,29 @@
                 // 从API获取所有日报
                 apiService.getAllReports()
                     .then(reports => {
-                        // 获取日期列表并排序
-                        const reportDates = Object.keys(reports).sort().reverse();
-                        
                         // 清空现有选择框
                         existingReportsSelect.innerHTML = '<option value="">选择日期...</option>';
                         
+                        if (!reports || reports.length === 0) {
+                            console.log("没有找到日报");
+                            existingReportsSelect.innerHTML = '<option value="">无日报可用</option>';
+                            return;
+                        }
+                        
+                        // 确保按日期排序（最新的在前面）
+                        reports.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        
                         // 添加日期选项
-                        reportDates.forEach(date => {
+                        reports.forEach(report => {
                             const option = document.createElement('option');
-                            option.value = date;
+                            option.value = report.date;
                             
                             // 解析日期
-                            const dateObj = new Date(date);
+                            const dateObj = new Date(report.date);
                             const year = dateObj.getFullYear();
                             const month = dateObj.getMonth() + 1;
                             const day = dateObj.getDate();
-                            const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-                            const weekday = weekdays[dateObj.getDay()];
+                            const weekday = report.weekday || ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dateObj.getDay()];
                             
                             option.textContent = `${year}年${month}月${day}日 (${weekday})`;
                             existingReportsSelect.appendChild(option);
