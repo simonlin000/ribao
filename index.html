@@ -5456,6 +5456,68 @@
                 reader.readAsText(file);
             });
         })();
+
+        // 登录表单提交处理
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const result = await apiService.login(username, password);
+                if (result.success) {
+                    // 存储登录状态
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('isAdmin', result.isAdmin);
+                    // 显示主界面
+                    document.getElementById('authScreen').style.display = 'none';
+                    document.getElementById('siteContainer').style.display = 'flex';
+                    // 初始化应用
+                    await initialize();
+                } else {
+                    showLoginError(result.message || '登录失败，请检查用户名和密码');
+                }
+            } catch (error) {
+                console.error('登录过程中发生错误:', error);
+                showLoginError('登录服务暂时不可用，请稍后再试');
+            }
+        }
+
+        // 访客密码验证
+        async function checkVisitorPassword(password) {
+            // 获取今日动态密码
+            try {
+                const dynamicPassword = await getDynamicPassword();
+                return password === dynamicPassword;
+            } catch (error) {
+                console.error('验证访客密码失败:', error);
+                return false;
+            }
+        }
+
+        // 在DOMContentLoaded事件中的处理
+        document.addEventListener('DOMContentLoaded', function() {
+            // 登录按钮事件
+            document.getElementById('loginButton').addEventListener('click', handleLogin);
+            
+            // 访客登录按钮
+            document.getElementById('visitorLoginButton').addEventListener('click', async function(e) {
+                e.preventDefault();
+                const password = document.getElementById('visitorPassword').value;
+                const isValid = await checkVisitorPassword(password);
+                if (isValid) {
+                    // 处理访客登录成功
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('isAdmin', 'false');
+                    document.getElementById('authScreen').style.display = 'none';
+                    document.getElementById('siteContainer').style.display = 'flex';
+                    await initialize();
+                } else {
+                    showLoginError('访客密码不正确');
+                }
+            });
+        });
     </script>
 </body>
 </html>
