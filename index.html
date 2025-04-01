@@ -2099,45 +2099,59 @@
             };
             
             // 初始化应用程序
-            function initialize() {
-                console.log("初始化应用...");
-                
-                try {
-                    // 检查是否已存在登录信息
-                    checkExistingLogin();
-                    
-                    // 设置事件监听器
-                    setupEventListeners();
-                    
-                    // 初始化访客密码
-                    initializeDynamicPassword();
-                    
-                    // 初始化报告存储
-                    initializeReports();
-                    
-                    // 设置窗口大小变化监听
-                    window.addEventListener('resize', handleOrientationChange);
-                    window.addEventListener('orientationchange', handleOrientationChange);
-                    
-                    // 处理页面内容适配移动设备
-                    if (window.innerWidth <= 900) {
-                        document.body.classList.add('mobile');
+            async function initialize() {
+                console.log("应用初始化开始...");
+                showLoading("正在初始化应用...");
+
+                // 检查登录状态
+                const isLoggedIn = await checkLoginStatus(); // 假设 checkLoginStatus 返回 Promise
+
+                if (isLoggedIn) {
+                    console.log("用户已登录，继续初始化...");
+                    // 根据用户角色显示/隐藏管理按钮
+                    const isAdmin = localStorage.getItem('isAdmin') === 'true';
+                    const adminBtn = document.getElementById('adminBtn');
+                    if (adminBtn) {
+                        adminBtn.style.display = isAdmin ? 'flex' : 'none';
                     }
-                    
-                    // 添加微信链接处理
-                    document.addEventListener('click', handleWechatLinks);
-                    
-                    console.log("应用初始化完成");
-                } catch (error) {
-                    console.error("初始化过程中出错:", error);
+
+                    // 显示主内容区域
+                    const mainContent = document.getElementById('mainContent');
+                    if (mainContent) {
+                        mainContent.style.display = 'flex'; // 或者 'block'，取决于你的布局
+                    }
+
+                    // 更新动态密码（如果需要）
+                    updateDynamicPassword();
+
+                    // 加载侧边栏和初始报告
+                    try {
+                        await updateSidebarReportList(); // 现在可以在 async 函数中使用 await
+                        await loadInitialReport();       // 现在可以在 async 函数中使用 await
+                    } catch (error) {
+                        console.error("初始化报告失败:", error);
+                        // 可以添加用户友好的错误提示
+                        const reportContent = document.getElementById('reportContent');
+                        if (reportContent) {
+                            reportContent.innerHTML = `<div class="error-message">初始化报告列表失败，请刷新页面重试。</div>`;
+                        }
+                    } finally {
+                        hideLoading(); // 确保在所有操作后隐藏加载指示器
+                    }
+
+                    // 初始化管理面板（如果用户是管理员）
+                    if (isAdmin) {
+                        initializeAdminPanel();
+                    }
+
+                    // 初始化其他UI元素和事件监听器
+                    initializeUIComponents();
+
+                } else {
+                    console.log("用户未登录，停留在认证界面。");
+                    hideLoading(); // 未登录也要隐藏加载指示器
                 }
-                
-                // 延迟运行移动端视图调整，确保DOM完全加载
-                setTimeout(function() {
-                    if (window.innerWidth <= 900) {
-                        adjustMobileView();
-                    }
-                }, 100);
+                console.log("应用初始化结束。");
             }
             
             // 处理微信公众号链接
@@ -4086,7 +4100,11 @@
             }
             
             // 初始化应用
-            initialize(); 
+            initialize().catch(error => {
+                console.error("初始化过程中发生未捕获的错误:", error);
+                // 可以显示一个全局错误消息
+                hideLoading(); // 确保出错时也隐藏加载
+            });
         });
 
         // 对showCard函数进行全面增强，确保卡片内容正确显示
