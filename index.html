@@ -576,18 +576,58 @@
                 display: none !important;
             }
             
-            /* 改进移动端内容样式 */
+            /* 改进移动端内容样式 - 增强溢出控制 */
             .section {
                 padding: 15px !important;
                 width: 100% !important;
                 max-width: 100% !important;
                 box-sizing: border-box !important;
                 overflow-wrap: break-word !important;
-                word-break: break-all !important;
+                word-break: break-word !important; /* 更改为break-word而不是break-all，更好地处理长单词 */
             }
             
-            .section h2 {
-                font-size: 20px;
+            /* 确保所有内容元素不溢出 */
+            .section * {
+                max-width: 100% !important;
+                overflow-wrap: break-word !important;
+                word-break: break-word !important; /* 更好的文本换行处理 */
+                box-sizing: border-box !important;
+            }
+            
+            /* 强化图片响应式处理 */
+            .section img {
+                height: auto !important;
+                max-width: 100% !important;
+                object-fit: contain !important;
+                display: block !important; /* 防止行内图片问题 */
+                margin: 10px auto !important; /* 居中显示 */
+            }
+            
+            /* 增强表格显示 */
+            .section table {
+                display: block !important;
+                width: 100% !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important; /* 提升iOS滚动体验 */
+                border-collapse: collapse !important;
+            }
+            
+            /* 改进代码块和预格式化文本 */
+            .section pre,
+            .section code {
+                white-space: pre-wrap !important;
+                overflow-x: auto !important;
+                background-color: rgba(0, 0, 0, 0.05) !important;
+                padding: 8px !important;
+                border-radius: 4px !important;
+                font-size: 90% !important;
+            }
+            
+            /* 改进引用块样式 */
+            .section blockquote {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                padding: 10px !important;
             }
             
             .summary-item h3 {
@@ -696,6 +736,42 @@
                 display: block !important;
                 height: auto !important;
                 max-height: none !important;
+            }
+            
+            /* 进一步优化最小屏幕体验 */
+            .content-container {
+                padding: 15px 12px !important;
+            }
+            
+            /* 减小标题字体大小，避免溢出 */
+            .header h1 {
+                font-size: 20px !important;
+            }
+            
+            .section h2 {
+                font-size: 18px !important;
+            }
+            
+            .summary-item h3 {
+                font-size: 16px !important;
+            }
+            
+            /* 优化小屏幕列表显示 */
+            .section ul, 
+            .section ol {
+                padding-left: 16px !important;
+            }
+            
+            /* 确保小屏幕上链接不会溢出 */
+            .section a {
+                word-break: break-all !important; /* 确保长URL可以换行 */
+            }
+            
+            /* 优化表格在特小屏幕上的显示 */
+            .section table td,
+            .section table th {
+                padding: 6px 4px !important;
+                font-size: 13px !important;
             }
         }
         
@@ -920,32 +996,39 @@
         }
         
         .loading-indicator {
-            display: none;
-            position: absolute;
+            position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(20, 22, 33, 0.8);
+            color: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            z-index: 9999;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
         }
         
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
             width: 40px;
             height: 40px;
-            margin: 0 auto 10px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #5a61ff;
             animation: spin 1s linear infinite;
         }
         
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 14px;
+            font-weight: 500;
         }
         
         .error-message {
@@ -1017,9 +1100,564 @@
             transform: translateX(5px) scale(0.98);
             background: rgba(90, 97, 255, 0.35);
         }
+        
+        /* 视图切换按钮样式 */
+        .view-mode-toggle {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+            gap: 10px;
+        }
+        
+        .view-toggle-btn {
+            background: rgba(90, 97, 255, 0.2);
+            color: var(--text-light);
+            border: 1px solid rgba(90, 97, 255, 0.4);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .view-toggle-btn:hover {
+            background: rgba(90, 97, 255, 0.3);
+        }
+        
+        .view-toggle-btn.active {
+            background: var(--primary-color);
+            box-shadow: 0 2px 10px rgba(90, 97, 255, 0.5);
+        }
+        
+        /* 卡片视图容器 */
+        .card-view-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: auto;
+            min-height: 300px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        /* 卡片导航 */
+        .card-navigation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 15px;
+            gap: 10px;
+            z-index: 20;
+        }
+        
+        .card-nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-light);
+        }
+        
+        .card-nav-btn:hover {
+            background: rgba(90, 97, 255, 0.4);
+            transform: scale(1.1);
+        }
+        
+        .card-indicator {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 15px;
+            border-radius: 15px;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+        
+        /* 卡片内容包装器 */
+        .card-content-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            perspective: 1000px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        /* 卡片内容 */
+        .card-content {
+            width: 100%;
+            height: auto;
+            min-height: 200px;
+            padding: 15px;
+            background-color: #1e2130;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            overflow-x: hidden;
+            margin: 10px 0;
+            color: #eee;
+            position: relative;
+            z-index: 10;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        /* 卡片标题 */
+        .card-content h3 {
+            font-size: 1.4em;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #87ceff;
+            border-bottom: 1px solid rgba(135, 206, 255, 0.3);
+            padding-bottom: 8px;
+        }
+        
+        /* 标记当前卡片的样式 */
+        .card-active {
+            display: block;
+        }
+        
+        /* 卡片切换动画 */
+        @keyframes cardFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        /* 卡片内容底部的卡片标记 */
+        .card-marker {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(90, 97, 255, 0.2);
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            color: var(--secondary-color);
+        }
+        
+        /* AI元素装饰 */
+        .ai-decoration {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            right: -15px;
+            top: -15px;
+            opacity: 0.1;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%235a61ff' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v2h-2zm0 4h2v6h-2z'/%3E%3C/svg%3E");
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 900px) {
+            .card-content {
+                padding: 15px;
+            }
+            
+            .card-nav-btn {
+                width: 35px;
+                height: 35px;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .view-toggle-btn {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+            
+            .card-content-wrapper {
+                margin-top: 10px;
+            }
+            
+            .card-content {
+                padding: 15px 12px;
+                min-height: 300px;
+            }
+        }
+        
+        /* 卡片内容文字颜色优化 */
+        .card-content p, 
+        .card-content li,
+        .card-content div:not(.ai-decoration):not(.card-marker) {
+            color: #e0e0e0 !important; /* 更亮的文字颜色 */
+        }
+
+        .card-content .summary-card p,
+        .card-content .section-card p,
+        .card-content .header-card p:not(.date) {
+            color: #f0f0f0 !important; /* 摘要卡片中段落更亮 */
+        }
+
+        /* 强调重要内容 */
+        .card-content h3 {
+            color: #87ceff !important; /* 保持蓝色标题 */
+            font-weight: 500;
+        }
+
+        /* 特殊强调元素 */
+        .card-content strong, 
+        .card-content b,
+        .card-content em {
+            color: #a5d6ff !important; /* 强调文本用淡蓝色 */
+        }
+
+        /* 确保链接颜色醒目 */
+        .card-content a {
+            color: #5a9eff !important;
+            text-decoration: none;
+        }
+
+        .card-content a:hover {
+            text-decoration: underline;
+        }
+
+        /* 时间戳和来源标签样式优化 */
+        .card-content .timestamp,
+        .card-content .source,
+        .card-content .author {
+            color: #87ceff !important;
+            font-weight: 500;
+        }
+
+        /* 卡片内引用块样式 */
+        .card-content blockquote {
+            border-left: 3px solid rgba(135, 206, 255, 0.5);
+            padding-left: 12px;
+            margin-left: 0;
+            color: #bbd8ff !important;
+        }
+
+        /* 确保卡片内容可见度 */
+        .card-content .section-card,
+        .card-content .summary-card,
+        .card-content .header-card,
+        .card-content .fallback-content {
+            color: #e0e0e0 !important;
+        }
+
+        /* 确保卡片中的原始HTML内容样式正确 */
+        .card-content .fallback-content * {
+            max-width: 100% !important;
+            color: #e0e0e0 !important;
+        }
+
+        .card-content .fallback-content h2 {
+            color: #87ceff !important;
+            font-size: 20px !important;
+            margin-top: 20px !important;
+            margin-bottom: 10px !important;
+            border-bottom: 1px solid rgba(135, 206, 255, 0.3) !important;
+            padding-bottom: 5px !important;
+        }
+
+        /* 卡片内列表和段落强化 */
+        .card-content ul, 
+        .card-content ol {
+            padding-left: 20px !important;
+            margin: 10px 0 !important;
+        }
+
+        .card-content li {
+            margin-bottom: 5px !important;
+        }
+
+        .card-content p {
+            margin: 10px 0 !important;
+        }
+
+        /* 移动端视图优化 */
+        @media (max-width: 768px) {
+            /* 顶部导航容器 */
+            .top-navigation {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: rgba(15, 18, 26, 0.95);
+                padding: 10px 15px;
+                z-index: 1000;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            }
+            
+            /* 页面标题 */
+            .page-title {
+                font-size: 18px;
+                font-weight: bold;
+                color: #87ceff;
+            }
+            
+            /* 按钮组容器 */
+            .buttons-group {
+                display: flex;
+                gap: 10px;
+            }
+            
+            /* 所有导航按钮通用样式 */
+            .nav-button {
+                padding: 5px 10px;
+                border-radius: 15px;
+                border: 1px solid rgba(135, 206, 255, 0.5);
+                background: rgba(40, 44, 52, 0.8);
+                color: #87ceff;
+                font-size: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .nav-button:hover, .nav-button.active {
+                background: rgba(90, 97, 255, 0.3);
+            }
+            
+            /* 内容容器增加顶部间距 */
+            .content-container {
+                margin-top: 60px !important; /* 确保内容不被顶部导航挡住 */
+            }
+            
+            /* 视图切换按钮位置调整 */
+            .view-mode-toggle {
+                position: fixed;
+                top: 60px; /* 在顶部导航下方 */
+                right: 10px;
+                z-index: 100;
+                display: flex;
+                background: rgba(20, 22, 33, 0.8);
+                border-radius: 20px;
+                padding: 5px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            }
+            
+            /* 卡片视图容器调整 */
+            .card-view-container {
+                margin-top: 100px !important; /* 确保内容不被顶部导航和视图切换按钮挡住 */
+            }
+        }
+
+        /* 卡片滑动反馈效果 */
+        @keyframes slideLeft {
+            0% { transform: translateX(20px); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideRight {
+            0% { transform: translateX(-20px); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+
+        .slide-left {
+            animation: slideLeft 0.3s ease-out forwards;
+        }
+
+        .slide-right {
+            animation: slideRight 0.3s ease-out forwards;
+        }
+
+        /* 添加滑动提示 */
+        .swipe-indicator {
+            position: absolute;
+            top: 50%;
+            width: 40px;
+            height: 40px;
+            background: rgba(90, 97, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+        }
+
+        .swipe-indicator.left {
+            left: 10px;
+            transform: translateY(-50%);
+        }
+
+        .swipe-indicator.right {
+            right: 10px;
+            transform: translateY(-50%);
+        }
+
+        .swipe-indicator.active {
+            opacity: 1;
+            animation: pulse 0.5s ease-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: translateY(-50%) scale(0.8); }
+            50% { transform: translateY(-50%) scale(1.2); }
+            100% { transform: translateY(-50%) scale(1); }
+        }
+
+        /* 添加这些关键CSS样式修复，确保卡片内容可见 */
+        .card-content > * {
+            max-width: 100% !important;
+            margin-bottom: 15px;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 卡片内容区中的标题样式 */
+        .card-content h3 {
+            font-size: 1.4em;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #87ceff;
+            border-bottom: 1px solid rgba(135, 206, 255, 0.3);
+            padding-bottom: 8px;
+        }
+
+        /* 卡片内图片处理 */
+        .card-content img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px auto;
+            border-radius: 8px;
+        }
+
+        /* 确保卡片导航显示在正确位置 */
+        .card-navigation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 15px;
+            gap: 10px;
+            z-index: 20;
+        }
+
+        /* 强制显示卡片计数器 */
+        .card-counter {
+            position: absolute !important;
+            top: 10px !important;
+            right: 10px !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            color: #fff !important;
+            padding: 5px 10px !important;
+            border-radius: 15px !important;
+            font-size: 12px !important;
+            z-index: 100 !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        /* 增加文本框容量 */
+        .report-editor-textarea {
+            min-height: 400px !important; /* 增加高度 */
+            max-height: 800px !important; /* 设置最大高度 */
+            overflow-y: auto !important; /* 垂直滚动条 */
+            white-space: pre-wrap !important; /* 保留换行 */
+            font-family: monospace !important; /* 等宽字体 */
+            font-size: 14px !important; /* 适合的字体大小 */
+            line-height: 1.5 !important; /* 行高 */
+            width: 100% !important; /* 确保宽度充分利用空间 */
+            box-sizing: border-box !important; /* 边框盒模型 */
+        }
+
+        /* 确保编辑器容器也有适当大小 */
+        .report-editor-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-bottom: 20px !important;
+        }
+
+        /* 解决移动设备上文本框宽度问题 */
+        @media (max-width: 768px) {
+            .editor-container, .content-area {
+                width: 100% !important;
+                padding: 5px !important;
+            }
+            
+            .editor-container textarea, 
+            .content-area textarea,
+            .report-editor-textarea {
+                width: 100% !important;
+                font-size: 12px !important; /* 移动设备上稍小的字体 */
+            }
+        }
+
+        /* 文件导入样式 */
+        .file-import-container {
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(90, 97, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .file-import-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: linear-gradient(135deg, #5a61ff 0%, #3a42e0 100%);
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(90, 97, 255, 0.3);
+        }
+
+        .file-import-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(90, 97, 255, 0.4);
+        }
+
+        .file-import-icon {
+            font-size: 18px;
+        }
+
+        .file-import-input {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+
+        .file-import-status {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #87ceff;
+            text-align: center;
+            min-height: 20px;
+        }
     </style>
 </head>
 <body>
+    <!-- 加载指示器 - 添加在页面顶层，确保可访问性 -->
+    <div id="loadingIndicator" class="loading-indicator">
+        <div class="spinner"></div>
+        <div class="loading-text">加载中...</div>
+    </div>
+    
     <!-- Guest Login Screen -->
     <div id="guestAuth" class="auth-screen">
         <div class="auth-container">
@@ -1204,7 +1842,45 @@
         
         <!-- Main content area -->
         <div class="main-content">
+            <!-- 添加到合适位置，例如在 .main-content 类的元素内部的顶部 -->
+            <div class="view-mode-toggle">
+                <button id="reportViewBtn" class="view-toggle-btn active" aria-label="日报视图">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm16 14H5V5h14v14zm-5-7V8h-2v4H8v2h4v2h2v-2h4v-2h-4z"/></svg>
+                    日报视图
+                </button>
+                <button id="cardViewBtn" class="view-toggle-btn" aria-label="卡片视图">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm16 14H5V5h14v14zM7.5 13h2v2h-2zm0-6h2v2h-2zm4 0h2v2h-2zm4 0h2v2h-2zm-4 3h2v2h-2zm4 3h2v2h-2zm-8 3h8v2h-8z"/></svg>
+                    卡片视图
+                </button>
+            </div>
+            
+            <!-- 卡片视图容器 - 添加到 reportContent 同级 -->
+            <div id="cardViewContainer" class="card-view-container" style="display: none;">
+                <div class="card-navigation">
+                    <button id="prevCardBtn" class="card-nav-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                    </button>
+                    <div class="card-indicator">
+                        <span id="currentCardIndex">1</span> / <span id="totalCards">1</span>
+                    </div>
+                    <button id="nextCardBtn" class="card-nav-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                    </button>
+                </div>
+                <div class="card-content-wrapper">
+                    <div id="cardContent" class="card-content"></div>
+                </div>
+            </div>
+            
             <div class="content-container" id="reportContent">
+                <!-- 添加日报导入工具按钮 -->
+                <div class="report-import-tool" style="margin-bottom: 20px; text-align: right;">
+                    <button id="showImportModalBtn" class="btn" style="background: linear-gradient(135deg, #5a61ff, #3a42e0); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        导入JSON日报
+                    </button>
+                </div>
+                
                 <!-- Report content will be dynamically loaded here -->
                 <div class="header">
                      <h1>
@@ -1229,7 +1905,7 @@
             </div>
             <div id="loadingIndicator" class="loading-indicator">
                 <div class="spinner"></div>
-                <div>加载中...</div>
+                <div class="loading-text">加载中...</div>
             </div>
         </div>
     </div>
@@ -1376,7 +2052,9 @@
             const dynamicPasswordInput = document.getElementById('dynamicPassword');
             const savePasswordBtn = document.getElementById('savePasswordBtn');
             const passwordSuccess = document.getElementById('passwordSuccess');
-            
+            // 获取loadingIndicator元素，现在可以安全获取
+            const loadingIndicator = document.getElementById('loadingIndicator'); 
+
             // 日报管理元素
             const reportDateInput = document.getElementById('reportDate');
             const reportContentTextarea = document.getElementById('reportContentTextarea');
@@ -1676,22 +2354,23 @@
             
             // 初始化报告存储
             function initializeReports() {
-                // 尝试获取3月26日的报告来确保它存在
-                apiService.getReport('2025-03-26')
-                    .then(report => {
-                        if (!report) {
-                            // 如果不存在，则创建默认报告
-                            console.log("默认报告不存在，尝试创建...");
-                            apiService.saveReport('2025-03-26', DEFAULT_REPORT.content)
-                                .then(() => console.log("默认报告已创建"))
-                                .catch(error => console.error("创建默认报告失败:", error));
-                        } else {
-                            console.log("默认报告已存在");
-                        }
-                    })
-                    .catch(error => {
-                        console.error("检查默认报告失败:", error);
-                    });
+                // 确保loadingIndicator存在再操作
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'flex';
+                } else {
+                    console.warn('initializeReports: loadingIndicator not found!');
+                }
+                try {
+                    await updateSidebarReportList();
+                    await loadInitialReport();
+                } catch (error) {
+                    console.error("初始化报告失败:", error);
+                } finally {
+                    // 确保loadingIndicator存在再操作
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+                }
             }
             
             // 显示登录屏幕
@@ -2655,88 +3334,112 @@
             // 保存日报
             function saveReport(date, content, format = 'html') {
                 console.log(`保存日期为 ${date} 的报告，格式: ${format}`);
-                
-                // 确保界面显示成功消息，不依赖于API结果
-                reportSuccess.style.display = 'block';
-                setTimeout(() => {
-                    reportSuccess.style.display = 'none';
-                }, 3000);
-                
-                // 强制更新当前查看的日期
-                currentViewingReportDate = date;
-                
-                // 立即更新界面显示，不等待API响应
-                const contentContainer = document.getElementById('reportContent');
-                if (contentContainer) {
-                    // 保存header结构
-                    const headerElement = contentContainer.querySelector('.header');
-                    let headerContent = '';
-                    if (headerElement) {
-                        headerContent = headerElement.outerHTML;
-                    }
-                    
-                    // 根据格式选择渲染方式
-                    if (format === 'json') {
-                        contentContainer.innerHTML = renderJSONReport(content);
-                    } else {
-                    // 更新内容
-                    contentContainer.innerHTML = content;
-                    }
-                    
-                    // 恢复header如果需要
-                    if (headerContent && !contentContainer.querySelector('.header')) {
-                        contentContainer.insertAdjacentHTML('afterbegin', headerContent);
-                    }
-                    
-                    // 更新日期显示
-                    const dateElement = contentContainer.querySelector('.header .date');
-                    if (dateElement) {
-                        dateElement.textContent = formatDate(date);
-                    }
-                }
-                
-                // 立即尝试更新侧边栏
-                try {
-                    console.log("尝试立即更新侧边栏...");
-                    // 确保函数存在再调用
-                    if (typeof updateSidebarReportList === 'function') {
-                    updateSidebarReportList();
-                    } else {
-                        console.warn("updateSidebarReportList函数不存在，跳过更新侧边栏");
-                    }
-                } catch (e) {
-                    console.error("更新侧边栏失败", e);
-                }
-                
+
+                // 显示加载指示（可选）
+                // loadingIndicator.style.display = 'flex';
+
                 // 使用API服务保存到后端
-                // 添加格式参数
                 apiService.saveReport(date, content, format)
                     .then(response => {
                         console.log('日报保存成功:', response);
-                        
-                        // 再次强制更新侧边栏和管理面板
+
+                        // --- 保存成功后的操作 ---
+                        // 1. 显示成功消息
+                        reportSuccess.style.display = 'block';
                         setTimeout(() => {
-                            console.log("API保存成功后，再次更新侧边栏和管理面板");
-                            try {
-                                if (typeof updateSidebarReportList === 'function') {
-                            updateSidebarReportList();
-                                }
-                                if (typeof loadReportsList === 'function') {
-                            loadReportsList();
-                                }
-                            } catch (e) {
-                                console.error("更新侧边栏或管理面板失败", e);
+                            reportSuccess.style.display = 'none';
+                        }, 3000);
+
+                        // 2. 更新当前查看的日期
+                        currentViewingReportDate = date;
+
+                        // 3. 更新主内容区域显示 (如果需要立即看到新内容)
+                        const contentContainer = document.getElementById('reportContent');
+                        if (contentContainer) {
+                            // 保存header结构
+                            const headerElement = contentContainer.querySelector('.header');
+                            let headerContent = '';
+                            if (headerElement) {
+                                headerContent = headerElement.outerHTML;
                             }
-                        }, 500);
+
+                            // 根据格式选择渲染方式
+                            if (format === 'json') {
+                                contentContainer.innerHTML = renderJSONReport(content);
+                            } else {
+                                contentContainer.innerHTML = content;
+                            }
+
+                            // 恢复header如果需要
+                            if (headerContent && !contentContainer.querySelector('.header')) {
+                                contentContainer.insertAdjacentHTML('afterbegin', headerContent);
+                            }
+
+                            // 更新日期显示
+                            const dateElement = contentContainer.querySelector('.header .date');
+                            if (dateElement) {
+                                dateElement.textContent = formatDate(date);
+                            }
+                        }
+
+                        // 4. 更新侧边栏和管理面板列表
+                        console.log("API保存成功后，更新侧边栏和管理面板");
+                        try {
+                            if (typeof updateSidebarReportList === 'function') {
+                                updateSidebarReportList(); // 刷新侧边栏
+                            }
+                            if (typeof loadReportsList === 'function') {
+                                loadReportsList(); // 刷新管理面板下拉列表
+                            }
+                        } catch (e) {
+                            console.error("更新侧边栏或管理面板失败", e);
+                        }
+
+                        // 5. 显示成功弹窗
+                        const successAlert = document.createElement('div');
+                        successAlert.style.position = 'fixed';
+                        successAlert.style.top = '50%';
+                        successAlert.style.left = '50%';
+                        successAlert.style.transform = 'translate(-50%, -50%)';
+                        successAlert.style.padding = '15px 20px';
+                        successAlert.style.background = 'rgba(0, 0, 0, 0.8)';
+                        successAlert.style.color = '#7bed9f';
+                        successAlert.style.borderRadius = '8px';
+                        successAlert.style.zIndex = '9999';
+                        successAlert.textContent = "日报保存成功！";
+                        document.body.appendChild(successAlert);
+                        setTimeout(() => {
+                            document.body.removeChild(successAlert);
+                        }, 3000);
+
+                        // 6. 清空表单 (可选)
+                        // reportContentTextarea.value = '';
+                        // document.getElementById('jsonContentTextarea').value = '';
+
+                        // 7. 关闭管理面板 (如果打开)
+                        // adminPanel.style.display = 'none';
+
+                        // 8. 移动端优化
+                        if (window.innerWidth <= 900) {
+                            optimizeContentForMobile();
+                            // 可能需要关闭侧边栏
+                            // document.getElementById('sidebar').classList.remove('active');
+                            // document.querySelector('.main-content').style.display = 'block';
+                        }
+
                     })
                     .catch(error => {
                         console.error('保存日报失败:', error);
-                        // 虽然API保存失败，但是界面上已经更新了内容
+                        // --- 保存失败后的操作 ---
+                        reportError.textContent = `保存日报失败: ${error.message || '请检查网络或联系管理员'}`;
                         reportError.style.display = 'block';
-                        reportError.textContent = '保存到服务器失败，但内容已在本地更新';
                         setTimeout(() => {
                             reportError.style.display = 'none';
-                        }, 3000);
+                        }, 5000); // 显示更长时间
+                    })
+                    .finally(() => {
+                        // 隐藏加载指示（可选）
+                        // if (loadingIndicator) loadingIndicator.style.display = 'none';
                     });
             }
             
@@ -2798,65 +3501,22 @@
             
             // 动态加载日报内容
             function loadReportContent(date) {
-                console.log(`加载 ${date} 的报告内容`);
-                
-                // 确保页面结构完整
-                ensureReportStructure();
-                
-                // 更新当前查看的报告日期
-                currentViewingReportDate = date;
-                
-                // 获取内容容器
                 const contentContainer = document.getElementById('reportContent');
-                if (!contentContainer) {
-                    console.error("找不到内容容器，无法加载报告");
-                    return;
-                }
                 
-                // 显示加载动画
-                safeSetContent('loadingIndicator', '', false);
-                document.getElementById('loadingIndicator').style.display = 'block';
-                
-                // 更新日期显示
-                const dateElement = document.querySelector('.header .date');
-                if (dateElement) {
-                    dateElement.textContent = formatDate(date);
+                // 确保loadingIndicator存在再操作
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'flex'; // 显示加载动画
                 } else {
-                    console.warn("日期元素不存在，无法设置日期显示");
-                }
-                
-                // 对于固定的示例日期，直接使用默认内容
-                if (date === '2025-03-26') {
-                    const defaultContent = createDefaultReportContent(date);
-                    contentContainer.innerHTML = defaultContent;
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                    
-                    // 优化移动端显示
-                    if (window.innerWidth <= 900) {
-                        optimizeContentForMobile();
-                    }
-                    
-                    // 更新侧边栏选中状态
-                    const allDayItems = document.querySelectorAll('#march-days li');
-                    allDayItems.forEach(item => item.classList.remove('selected'));
-                    
-                    const targetDayItem = Array.from(allDayItems).find(item => {
-                        const day = parseInt(item.textContent.trim().replace('日', ''));
-                        return day === 26;
-                    });
-                    
-                    if (targetDayItem) {
-                        targetDayItem.classList.add('selected');
-                    }
-                    
-                    return;
+                    console.warn('loadReportContent: loadingIndicator not found!');
                 }
                 
                 // 调用API获取报告内容
                 apiService.getReport(date)
                     .then(report => {
-                        // 隐藏加载动画
-                        document.getElementById('loadingIndicator').style.display = 'none';
+                        // 确保loadingIndicator存在再操作
+                        if (loadingIndicator) {
+                            loadingIndicator.style.display = 'none'; // 隐藏加载动画
+                        }
                         
                         if (report && report.content) {
                             // 检查是否是JSON格式的内容
@@ -2915,7 +3575,10 @@
                     })
                     .catch(error => {
                         console.error('加载报告失败:', error);
-                        document.getElementById('loadingIndicator').style.display = 'none';
+                        // 确保loadingIndicator存在再操作
+                        if (loadingIndicator) {
+                            loadingIndicator.style.display = 'none'; // 隐藏加载动画
+                        }
                         
                         // 显示错误消息
                         contentContainer.innerHTML = `
@@ -3423,139 +4086,1358 @@
             }
             
             // 初始化应用
-            initialize();
+            initialize(); 
         });
 
-        // 确保日报HTML结构完整
-        function ensureReportStructure() {
-            const contentContainer = document.getElementById('reportContent');
-            console.log('检查reportContent是否存在:', contentContainer ? '存在' : '不存在');
+        // 对showCard函数进行全面增强，确保卡片内容正确显示
+        function showCard(index) {
+            if (window.cards.length === 0) {
+                console.warn("没有可显示的卡片");
+                return;
+            }
             
-            if (!contentContainer) {
-                console.error('报告容器不存在，尝试创建容器元素');
+            // 边界检查
+            if (index < 0) index = 0;
+            if (index >= window.cards.length) index = window.cards.length - 1;
+            
+            window.currentCard = index;
+            
+            // 获取卡片内容元素
+            const cardContent = document.getElementById('cardContent');
+            if (!cardContent) {
+                console.error("卡片内容容器不存在");
+                return;
+            }
+            
+            // 确保卡片视图容器可见
+            const cardViewContainer = document.getElementById('cardViewContainer');
+            if (cardViewContainer) {
+                cardViewContainer.style.display = 'flex';
                 
-                // 检查是否有main-content容器
-                const mainContent = document.querySelector('.main-content');
-                if (mainContent) {
-                    console.log('找到main-content容器，在其中创建reportContent');
+                // 强制刷新布局
+                void cardViewContainer.offsetHeight;
+            }
+            
+            // 确保报告内容被隐藏
+            const reportContent = document.getElementById('reportContent');
+            if (reportContent) {
+                reportContent.style.display = 'none';
+            }
+            
+            // 更新卡片内容 - 使用更安全的方式
+            console.log(`显示卡片 ${index + 1}/${window.cards.length}: ${window.cards[index].title || '无标题'}`);
+            
+            try {
+                // 创建临时容器，避免直接操作DOM引起的闪烁
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = window.cards[index].content;
+                
+                // 应用必要的样式
+                tempDiv.querySelectorAll('*').forEach(el => {
+                    el.style.maxWidth = '100%';
+                    el.style.boxSizing = 'border-box';
                     
-                    // 创建报告容器
-                    const newContentContainer = document.createElement('div');
-                    newContentContainer.id = 'reportContent';
-                    newContentContainer.className = 'content-container';
-                    mainContent.appendChild(newContentContainer);
-                    
-                    console.log('已创建reportContent容器');
-                    return true;
-                } else {
-                    console.error('main-content容器不存在，无法创建HTML结构');
-                    return false;
-                }
-            }
-            
-            // 检查header结构
-            let headerElement = contentContainer.querySelector('.header');
-            if (!headerElement) {
-                // 创建header
-                headerElement = document.createElement('div');
-                headerElement.className = 'header';
+                    // 如果是图片，确保其响应式显示
+                    if (el.tagName === 'IMG') {
+                        el.style.maxWidth = '100%';
+                        el.style.height = 'auto';
+                        el.style.display = 'block';
+                        el.style.margin = '10px auto';
+                    }
+                });
                 
-                // 添加标题
-                const titleElement = document.createElement('h1');
-                titleElement.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v2h-2zm0 4h2v6h-2z"/></svg>
-                    AI自媒体创造营 日报
-                `;
-                headerElement.appendChild(titleElement);
+                // 清空当前内容并添加新内容
+                cardContent.innerHTML = '';
                 
-                // 添加日期
-                const dateElement = document.createElement('div');
-                dateElement.className = 'date';
-                dateElement.textContent = formatDate(new Date().toISOString().split('T')[0]);
-                headerElement.appendChild(dateElement);
-                
-                // 添加到容器的开头
-                if (contentContainer.firstChild) {
-                    contentContainer.insertBefore(headerElement, contentContainer.firstChild);
-                } else {
-                    contentContainer.appendChild(headerElement);
+                // 复制临时容器中的所有子节点到cardContent
+                while (tempDiv.firstChild) {
+                    cardContent.appendChild(tempDiv.firstChild);
                 }
                 
-                console.log('已创建header结构');
+                // 添加卡片计数器
+                const counter = document.createElement('div');
+                counter.className = 'card-counter';
+                counter.textContent = `${index + 1}/${window.cards.length}`;
+                counter.style.position = 'absolute';
+                counter.style.top = '10px';
+                counter.style.right = '10px';
+                counter.style.background = 'rgba(0,0,0,0.6)';
+                counter.style.color = '#fff';
+                counter.style.padding = '5px 10px';
+                counter.style.borderRadius = '15px';
+                counter.style.fontSize = '12px';
+                counter.style.zIndex = '100';
+                cardContent.appendChild(counter);
+                
+                // 确保卡片容器内容可见
+                cardContent.style.display = 'block';
+                cardContent.style.visibility = 'visible';
+                cardContent.style.opacity = '1';
+                
+                // 重设动画
+                cardContent.style.animation = 'none';
+                void cardContent.offsetWidth; // 触发重排
+                cardContent.style.animation = 'cardFadeIn 0.4s ease-out';
+            } catch (err) {
+                console.error("显示卡片内容时出错:", err);
+                cardContent.innerHTML = `<div class="error-card">
+                    <h3>显示卡片失败</h3>
+                    <p>无法显示卡片内容。</p>
+                    <p>错误信息: ${err.message}</p>
+                </div>`;
             }
             
-            // 确保日期元素存在
-            if (!contentContainer.querySelector('.header .date')) {
-                const dateElement = document.createElement('div');
-                dateElement.className = 'date';
-                dateElement.textContent = formatDate(new Date().toISOString().split('T')[0]);
-                headerElement.appendChild(dateElement);
-                console.log('已创建日期元素');
+            // 更新导航指示器
+            const currentCardIndex = document.getElementById('currentCardIndex');
+            if (currentCardIndex) {
+                currentCardIndex.textContent = index + 1;
             }
             
-            console.log('日报HTML结构检查完成');
-            return true;
+            // 更新按钮状态
+            const prevCardBtn = document.getElementById('prevCardBtn');
+            const nextCardBtn = document.getElementById('nextCardBtn');
+            
+            if (prevCardBtn) {
+                prevCardBtn.disabled = index === 0;
+                prevCardBtn.style.opacity = index === 0 ? "0.5" : "1";
+            }
+            
+            if (nextCardBtn) {
+                nextCardBtn.disabled = index === window.cards.length - 1;
+                nextCardBtn.style.opacity = index === window.cards.length - 1 ? "0.5" : "1";
+            }
+            
+            // 强制DOM更新和重绘
+            setTimeout(() => {
+                if (cardContent.offsetHeight === 0) {
+                    console.warn("卡片内容高度为0，尝试强制更新样式");
+                    cardContent.style.minHeight = '200px';
+                    cardContent.style.border = '1px solid #5a61ff';
+                    cardContent.style.padding = '20px';
+                    cardContent.style.margin = '10px 0';
+                    cardContent.style.overflow = 'auto';
+                }
+            }, 50);
         }
 
-        // 设置定期检查密码更新的间隔
-        // setInterval(updateDailyPasswordIfNeeded, 60 * 60 * 1000); // 每小时检查一次 - 重复调用，已在上面定义
-        
-        // 测试函数 - 直接在控制台调用显示默认日报
-        function testShowDefaultReport() {
-            console.log("开始测试显示默认日报...");
+        // 文件导入功能
+        function initFileImport() {
+            const fileInput = document.getElementById('fileImport');
+            const statusDisplay = document.getElementById('fileImportStatus');
             
-            // 确保DEFAULT_REPORT在作用域内可见
-            const testReportContent = `<div class="header">
-                     <h1>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v2h-2zm0 4h2v6h-2z"/></svg>
-                        AI自媒体创造营 日报
-                    </h1>
-                    <div class="date">2025年3月26日 (周三)</div>
-                </div>
-                <div class="section">
-                    <h2>AI自媒体创造营日报</h2>
-                    <p>欢迎来到AI自媒体创造营日报馆！这里收录了创造营的每日动态和精彩内容。</p>
-                    <p>这是一个自定义的默认日报内容，如果您看到这段文字，说明默认日报已成功加载。</p>
-                    <p style="color: #ff6b6b; font-weight: bold; font-size: 18px;">这是一段醒目的红色文字用于测试。如果您能看到我，说明日报系统工作正常！</p>
-                </div>`;
-            
-            // 检查元素存在
-            const contentContainer = document.getElementById('reportContent');
-            console.log("reportContent容器:", contentContainer ? "存在" : "不存在");
-            
-            if (!contentContainer) {
-                console.log("reportContent不存在，尝试创建");
-                ensureReportStructure();
+            if (!fileInput) {
+                console.error('文件导入初始化失败：找不到文件输入元素');
+                return;
             }
             
-            // 获取创建后的容器
-            const container = document.getElementById('reportContent');
-            if (container) {
-                console.log("向reportContent写入测试内容");
-                container.innerHTML = testReportContent;
-                console.log("内容已写入");
+            fileInput.addEventListener('change', function(e) {
+                if (!this.files || !this.files[0]) {
+                    return;
+                }
                 
-                // 检查内容是否被正确写入
-                setTimeout(() => {
-                    const content = document.getElementById('reportContent').innerHTML;
-                    console.log("最终内容长度:", content.length);
-                    console.log("内容包含测试文字:", content.includes("这是一段测试日报文字") ? "是" : "否");
-                    
-                    // 测试更新侧边栏
+                const file = this.files[0];
+                const fileName = file.name;
+                const fileSize = Math.round(file.size / 1024) + ' KB';
+                
+                // 更新状态显示
+                if (statusDisplay) {
+                    statusDisplay.textContent = `正在处理: ${fileName} (${fileSize})`;
+                    statusDisplay.style.color = '#87ceff';
+                }
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
                     try {
-                        updateSidebarReportList();
-                        console.log("已尝试更新侧边栏");
-                    } catch (e) {
-                        console.error("更新侧边栏失败", e);
+                        const content = event.target.result;
+                        // 获取文本区域 - 查找所有可能的编辑器元素
+                        const reportTextArea = document.querySelector('.report-editor-textarea') || 
+                                             document.querySelector('#reportEditor') ||
+                                             document.querySelector('textarea[name="reportContent"]');
+                        
+                        if (!reportTextArea) {
+                            throw new Error('找不到报告编辑器');
+                        }
+                        
+                        // 根据文件类型处理内容
+                        if (fileName.toLowerCase().endsWith('.json')) {
+                            // 处理JSON文件
+                            try {
+                                const jsonData = JSON.parse(content);
+                                
+                                // 如果JSON包含htmlContent字段，提取它
+                                if (jsonData.htmlContent) {
+                                    reportTextArea.value = jsonData.htmlContent;
+                                    if (statusDisplay) {
+                                        statusDisplay.textContent = `已成功导入JSON中的HTML内容`;
+                                        statusDisplay.style.color = '#4eff9f';
+                                    }
+                                } else {
+                                    // 否则将整个JSON内容放入
+                                    reportTextArea.value = content;
+                                    if (statusDisplay) {
+                                        statusDisplay.textContent = `已导入JSON内容，但未找到htmlContent字段`;
+                                        statusDisplay.style.color = '#ffcc00';
+                                    }
+                                }
+                            } catch (jsonError) {
+                                console.error('JSON解析错误:', jsonError);
+                                if (statusDisplay) {
+                                    statusDisplay.textContent = `JSON解析失败: ${jsonError.message}`;
+                                    statusDisplay.style.color = '#ff4e4e';
+                                }
+                            }
+                        } else if (fileName.toLowerCase().endsWith('.html') || fileName.toLowerCase().endsWith('.txt')) {
+                            // 处理HTML或TXT文件 - 直接放入编辑器
+                            reportTextArea.value = content;
+                            if (statusDisplay) {
+                                statusDisplay.textContent = `已成功导入${fileName.split('.').pop().toUpperCase()}内容`;
+                                statusDisplay.style.color = '#4eff9f';
+                            }
+                        } else {
+                            if (statusDisplay) {
+                                statusDisplay.textContent = `不支持的文件类型`;
+                                statusDisplay.style.color = '#ff4e4e';
+                            }
+                        }
+                        
+                        // 触发change事件，确保其他依赖该事件的功能能够正确运行
+                        const changeEvent = new Event('change', { bubbles: true });
+                        reportTextArea.dispatchEvent(changeEvent);
+                        
+                        // 触发input事件，确保UI更新
+                        const inputEvent = new Event('input', { bubbles: true });
+                        reportTextArea.dispatchEvent(inputEvent);
+                        
+                    } catch (err) {
+                        console.error('文件处理错误:', err);
+                        if (statusDisplay) {
+                            statusDisplay.textContent = `处理失败: ${err.message}`;
+                            statusDisplay.style.color = '#ff4e4e';
+                        }
                     }
-                }, 100);
-            } else {
-                console.error("无法获取或创建reportContent，测试失败");
-            }
+                    
+                    // 清空文件输入，允许再次选择相同文件
+                    fileInput.value = '';
+                };
+                
+                reader.onerror = function() {
+                    if (statusDisplay) {
+                        statusDisplay.textContent = `读取文件失败`;
+                        statusDisplay.style.color = '#ff4e4e';
+                    }
+                };
+                
+                // 以文本形式读取文件
+                reader.readAsText(file);
+            });
+            
+            console.log('文件导入功能已初始化');
         }
-        
-        // 在页面加载完毕后自动执行测试
-        // setTimeout(testShowDefaultReport, 2000);
+
+        // 在适当时机初始化文件导入功能
+        document.addEventListener('DOMContentLoaded', function() {
+            // 延迟执行，确保所有元素都已加载
+            setTimeout(function() {
+                // 找到编辑器元素
+                const reportEditor = document.querySelector('.report-editor-textarea') || 
+                                   document.querySelector('#reportEditor') ||
+                                   document.querySelector('textarea[name="reportContent"]');
+                
+                if (reportEditor) {
+                    // 找到编辑器的父容器
+                    const editorContainer = reportEditor.closest('.report-editor-container') || 
+                                          reportEditor.parentElement;
+                    
+                    if (editorContainer) {
+                        // 创建文件导入容器
+                        const fileImportContainer = document.createElement('div');
+                        fileImportContainer.className = 'file-import-container';
+                        fileImportContainer.innerHTML = `
+                            <label for="fileImport" class="file-import-label">
+                                <span class="file-import-icon">📁</span> 导入HTML/JSON文件
+                            </label>
+                            <input type="file" id="fileImport" class="file-import-input" accept=".html,.json,.txt" />
+                            <div id="fileImportStatus" class="file-import-status"></div>
+                        `;
+                        
+                        // 将文件导入容器插入到编辑器之前
+                        editorContainer.insertBefore(fileImportContainer, reportEditor);
+                        
+                        // 初始化文件导入功能
+                        initFileImport();
+                    }
+                }
+            }, 1000);
+        });
+
+        // 在body末尾script标签前添加以下代码
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. 添加文件导入容器到页面
+            const body = document.body;
+            const fileImportHTML = `
+                <div id="fileImportModule" style="
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    z-index: 9999;
+                    background: rgba(25, 28, 40, 0.9);
+                    border: 1px solid #5a61ff;
+                    border-radius: 10px;
+                    padding: 15px;
+                    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+                    backdrop-filter: blur(5px);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    max-width: 320px;
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0; color: #87ceff; font-size: 16px;">文件导入</h3>
+                        <button id="closeImportModule" style="
+                            background: none;
+                            border: none;
+                            color: #87ceff;
+                            cursor: pointer;
+                            font-size: 18px;
+                        ">×</button>
+                    </div>
+                    <label for="fileImport" style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                        padding: 8px 16px;
+                        background: linear-gradient(135deg, #5a61ff 0%, #3a42e0 100%);
+                        color: white;
+                        border-radius: 20px;
+                        cursor: pointer;
+                        width: calc(100% - 32px);
+                        transition: all 0.2s ease;
+                        text-align: center;
+                    ">
+                        <span style="font-size: 18px;">📁</span> 选择HTML/JSON文件
+                    </label>
+                    <input type="file" id="fileImport" accept=".html,.json,.txt" style="
+                        width: 0.1px;
+                        height: 0.1px;
+                        opacity: 0;
+                        overflow: hidden;
+                        position: absolute;
+                        z-index: -1;
+                    " />
+                    <div id="fileImportStatus" style="
+                        margin-top: 8px;
+                        font-size: 14px;
+                        color: #87ceff;
+                        text-align: center;
+                        min-height: 20px;
+                    "></div>
+                </div>
+                
+                <button id="showImportModule" style="
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    z-index: 9998;
+                    background: #5a61ff;
+                    color: white;
+                    border: none;
+                    border-radius: 50%;
+                    width: 50px;
+                    height: 50px;
+                    font-size: 24px;
+                    cursor: pointer;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">📁</button>
+            `;
+            
+            // 添加到body
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = fileImportHTML;
+            while (tempDiv.firstChild) {
+                body.appendChild(tempDiv.firstChild);
+            }
+            
+            // 2. 修复文本域样式 - 应用强力样式规则
+            const textareaStyles = `
+                textarea {
+                    min-height: 500px !important;
+                    max-height: none !important;
+                    height: auto !important;
+                    overflow: auto !important;
+                    white-space: pre !important;
+                    font-family: monospace !important;
+                    font-size: 13px !important;
+                    line-height: 1.4 !important;
+                    tab-size: 2 !important;
+                    max-width: none !important;
+                    width: 100% !important;
+                    box-sizing: border-box !important;
+                    resize: vertical !important;
+                    background-color: #1a1d25 !important;
+                    color: #f8f8f8 !important;
+                    border: 1px solid #333 !important;
+                    padding: 10px !important;
+                }
+            `;
+            
+            const style = document.createElement('style');
+            style.textContent = textareaStyles;
+            document.head.appendChild(style);
+            
+            // 3. 初始化UI交互
+            const importModule = document.getElementById('fileImportModule');
+            const showImportBtn = document.getElementById('showImportModule');
+            const closeImportBtn = document.getElementById('closeImportModule');
+            
+            if (importModule && showImportBtn && closeImportBtn) {
+                // 初始隐藏导入模块
+                importModule.style.display = 'none';
+                
+                // 显示按钮点击事件
+                showImportBtn.addEventListener('click', function() {
+                    importModule.style.display = 'flex';
+                    showImportBtn.style.display = 'none';
+                });
+                
+                // 关闭按钮点击事件
+                closeImportBtn.addEventListener('click', function() {
+                    importModule.style.display = 'none';
+                    showImportBtn.style.display = 'flex';
+                });
+            }
+            
+            // 4. 实现文件导入功能
+            const fileInput = document.getElementById('fileImport');
+            const statusDisplay = document.getElementById('fileImportStatus');
+            
+            if (fileInput && statusDisplay) {
+                fileInput.addEventListener('change', function(e) {
+                    if (!this.files || !this.files[0]) return;
+                    
+                    const file = this.files[0];
+                    const fileName = file.name;
+                    const fileSize = Math.round(file.size / 1024) + ' KB';
+                    
+                    statusDisplay.textContent = `正在处理: ${fileName} (${fileSize})`;
+                    statusDisplay.style.color = '#87ceff';
+                    
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(event) {
+                        try {
+                            const content = event.target.result;
+                            
+                            // 寻找所有可能的文本区域
+                            const allTextareas = document.querySelectorAll('textarea');
+                            let targetTextarea = null;
+                            
+                            // 如果有多个文本区域，选择可见的那个
+                            if (allTextareas.length > 0) {
+                                for (const textarea of allTextareas) {
+                                    if (getComputedStyle(textarea).display !== 'none') {
+                                        targetTextarea = textarea;
+                                        break;
+                                    }
+                                }
+                                
+                                // 如果没有找到可见的，就用第一个
+                                if (!targetTextarea) {
+                                    targetTextarea = allTextareas[0];
+                                }
+                            }
+                            
+                            if (!targetTextarea) {
+                                throw new Error('找不到文本区域');
+                            }
+                            
+                            // 根据文件类型处理内容
+                            if (fileName.toLowerCase().endsWith('.json')) {
+                                try {
+                                    const jsonData = JSON.parse(content);
+                                    
+                                    if (jsonData.htmlContent) {
+                                        targetTextarea.value = jsonData.htmlContent;
+                                        statusDisplay.textContent = `已导入JSON中的HTML内容`;
+                                    } else {
+                                        targetTextarea.value = content;
+                                        statusDisplay.textContent = `已导入JSON内容`;
+                                    }
+                                    statusDisplay.style.color = '#4eff9f';
+                                } catch (jsonError) {
+                                    console.error('JSON解析错误:', jsonError);
+                                    targetTextarea.value = content;
+                                    statusDisplay.textContent = `已导入文本内容（JSON解析失败）`;
+                                    statusDisplay.style.color = '#ffcc00';
+                                }
+                            } else {
+                                targetTextarea.value = content;
+                                statusDisplay.textContent = `已导入${fileName.split('.').pop().toUpperCase()}内容`;
+                                statusDisplay.style.color = '#4eff9f';
+                            }
+                            
+                            // 触发事件
+                            ['input', 'change'].forEach(eventType => {
+                                const event = new Event(eventType, { bubbles: true });
+                                targetTextarea.dispatchEvent(event);
+                            });
+                            
+                        } catch (err) {
+                            console.error('文件处理错误:', err);
+                            statusDisplay.textContent = `处理失败: ${err.message}`;
+                            statusDisplay.style.color = '#ff4e4e';
+                        }
+                        
+                        fileInput.value = '';
+                        
+                        // 添加一个淡出效果
+                        setTimeout(() => {
+                            importModule.style.display = 'none';
+                            showImportBtn.style.display = 'flex';
+                        }, 3000);
+                    };
+                    
+                    reader.onerror = function() {
+                        statusDisplay.textContent = `读取文件失败`;
+                        statusDisplay.style.color = '#ff4e4e';
+                    };
+                    
+                    reader.readAsText(file);
+                });
+            }
+        });
+
+        // 修复文件导入功能和UI堆叠问题
+        document.addEventListener('DOMContentLoaded', function() {
+            // 延迟执行，确保页面完全加载
+            setTimeout(() => {
+                // 1. 创建文件导入组件
+                const fileImportHTML = `
+                    <div id="fileImportModule" style="
+                        position: fixed;
+                        bottom: 80px; /* 调整位置，避免与其他按钮重叠 */
+                        left: 20px; /* 改为左侧，避免与右侧按钮冲突 */
+                        z-index: 9999;
+                        background: rgba(25, 28, 40, 0.9);
+                        border: 1px solid #5a61ff;
+                        border-radius: 10px;
+                        padding: 15px;
+                        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+                        backdrop-filter: blur(5px);
+                        display: flex;
+                        flex-direction: column;
+                        gap: 10px;
+                        max-width: 320px;
+                    ">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; color: #87ceff; font-size: 16px;">文件导入</h3>
+                            <button id="closeImportModule" style="
+                                background: none;
+                                border: none;
+                                color: #87ceff;
+                                cursor: pointer;
+                                font-size: 18px;
+                            ">×</button>
+                        </div>
+                        <label for="fileImport" style="
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            padding: 8px 16px;
+                            background: linear-gradient(135deg, #5a61ff 0%, #3a42e0 100%);
+                            color: white;
+                            border-radius: 20px;
+                            cursor: pointer;
+                            width: calc(100% - 32px);
+                            transition: all 0.2s ease;
+                            text-align: center;
+                        ">
+                            <span style="font-size: 18px;">📁</span> 选择文件
+                        </label>
+                        <input type="file" id="fileImport" accept=".html,.json,.txt" style="
+                            width: 0.1px;
+                            height: 0.1px;
+                            opacity: 0;
+                            overflow: hidden;
+                            position: absolute;
+                            z-index: -1;
+                        " />
+                        <div id="fileImportStatus" style="
+                            margin-top: 8px;
+                            font-size: 14px;
+                            color: #87ceff;
+                            text-align: center;
+                            min-height: 20px;
+                        "></div>
+                    </div>
+                    
+                    <button id="showImportModule" style="
+                        position: fixed;
+                        bottom: 80px; /* 调整位置，避免与其他按钮重叠 */
+                        left: 20px; /* 改为左侧，避免与右侧按钮冲突 */
+                        z-index: 9998;
+                        background: #5a61ff;
+                        color: white;
+                        border: none;
+                        border-radius: 50%;
+                        width: 50px;
+                        height: 50px;
+                        font-size: 24px;
+                        cursor: pointer;
+                        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">📁</button>
+                `;
+                
+                // 防止重复添加
+                if (!document.getElementById('fileImportModule')) {
+                    // 添加到body
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = fileImportHTML;
+                    while (tempDiv.firstChild) {
+                        document.body.appendChild(tempDiv.firstChild);
+                    }
+                }
+                
+                // 2. 增强文本区域样式
+                const textareaStyles = `
+                    textarea {
+                        min-height: 500px !important;
+                        max-height: none !important;
+                        height: auto !important;
+                        overflow: auto !important;
+                        white-space: pre !important;
+                        font-family: monospace !important;
+                        font-size: 13px !important;
+                        line-height: 1.4 !important;
+                        tab-size: 2 !important;
+                        max-width: none !important;
+                        width: 100% !important;
+                        box-sizing: border-box !important;
+                        resize: vertical !important;
+                        background-color: #1a1d25 !important;
+                        color: #f8f8f8 !important;
+                        border: 1px solid #333 !important;
+                        padding: 10px !important;
+                    }
+                `;
+                
+                // 防止重复添加样式
+                if (!document.getElementById('enhanced-textarea-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'enhanced-textarea-styles';
+                    style.textContent = textareaStyles;
+                    document.head.appendChild(style);
+                }
+                
+                // 3. 初始化UI交互
+                const importModule = document.getElementById('fileImportModule');
+                const showImportBtn = document.getElementById('showImportModule');
+                const closeImportBtn = document.getElementById('closeImportModule');
+                
+                if (importModule && showImportBtn && closeImportBtn) {
+                    // 初始隐藏导入模块
+                    importModule.style.display = 'none';
+                    
+                    // 显示按钮点击事件
+                    showImportBtn.addEventListener('click', function() {
+                        importModule.style.display = 'flex';
+                        showImportBtn.style.display = 'none';
+                    });
+                    
+                    // 关闭按钮点击事件
+                    closeImportBtn.addEventListener('click', function() {
+                        importModule.style.display = 'none';
+                        showImportBtn.style.display = 'flex';
+                    });
+                }
+                
+                // 4. 改进的文件导入功能 - 增强JSON检测
+                const fileInput = document.getElementById('fileImport');
+                const statusDisplay = document.getElementById('fileImportStatus');
+                
+                if (fileInput && statusDisplay) {
+                    fileInput.addEventListener('change', function(e) {
+                        if (!this.files || !this.files[0]) return;
+                        
+                        const file = this.files[0];
+                        const fileName = file.name;
+                        const fileSize = Math.round(file.size / 1024) + ' KB';
+                        
+                        statusDisplay.textContent = `正在处理: ${fileName} (${fileSize})`;
+                        statusDisplay.style.color = '#87ceff';
+                        
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(event) {
+                            try {
+                                const content = event.target.result;
+                                
+                                // 寻找所有可能的文本区域
+                                const allTextareas = document.querySelectorAll('textarea');
+                                let targetTextarea = null;
+                                
+                                // 如果有多个文本区域，选择可见的那个
+                                if (allTextareas.length > 0) {
+                                    for (const textarea of allTextareas) {
+                                        if (getComputedStyle(textarea).display !== 'none') {
+                                            targetTextarea = textarea;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    // 如果没有找到可见的，就用第一个
+                                    if (!targetTextarea) {
+                                        targetTextarea = allTextareas[0];
+                                    }
+                                }
+                                
+                                if (!targetTextarea) {
+                                    throw new Error('找不到文本区域');
+                                }
+                                
+                                // 增强的JSON检测 - 不依赖文件扩展名
+                                let isJson = false;
+                                let jsonData = null;
+                                
+                                // 尝试以JSON格式解析
+                                try {
+                                    // 首先清理内容，处理一些常见的问题
+                                    const cleanedContent = content.trim();
+                                    jsonData = JSON.parse(cleanedContent);
+                                    isJson = true;
+                                    console.log("成功解析JSON数据:", jsonData);
+                                } catch (err) {
+                                    console.log("不是有效的JSON数据:", err);
+                                    isJson = false;
+                                }
+                                
+                                // 判断文件类型并处理
+                                if (isJson) {
+                                    console.log("检测到JSON格式");
+                                    // 是JSON，检查是否包含htmlContent字段
+                                    if (jsonData && jsonData.htmlContent) {
+                                        targetTextarea.value = jsonData.htmlContent;
+                                        statusDisplay.textContent = `已导入JSON中的HTML内容`;
+                                    } else {
+                                        // 直接填入原始内容
+                                        targetTextarea.value = content;
+                                        statusDisplay.textContent = `已导入JSON内容`;
+                                    }
+                                    statusDisplay.style.color = '#4eff9f';
+                                } else if (fileName.toLowerCase().endsWith('.html')) {
+                                    // HTML文件
+                                    targetTextarea.value = content;
+                                    statusDisplay.textContent = `已导入HTML内容`;
+                                    statusDisplay.style.color = '#4eff9f';
+                                } else {
+                                    // 其他文本文件
+                                    targetTextarea.value = content;
+                                    statusDisplay.textContent = `已导入文本内容`;
+                                    statusDisplay.style.color = '#4eff9f';
+                                }
+                                
+                                // 手动设置文本区域高度，确保能看到所有内容
+                                targetTextarea.style.height = 'auto';
+                                targetTextarea.style.height = Math.max(500, targetTextarea.scrollHeight) + 'px';
+                                
+                                // 触发事件，通知页面内容已更改
+                                ['input', 'change'].forEach(eventType => {
+                                    const event = new Event(eventType, { bubbles: true });
+                                    targetTextarea.dispatchEvent(event);
+                                });
+                                
+                            } catch (err) {
+                                console.error('文件处理错误:', err);
+                                statusDisplay.textContent = `处理失败: ${err.message}`;
+                                statusDisplay.style.color = '#ff4e4e';
+                            }
+                            
+                            fileInput.value = '';
+                            
+                            // 3秒后自动关闭面板
+                            setTimeout(() => {
+                                importModule.style.display = 'none';
+                                showImportBtn.style.display = 'flex';
+                            }, 3000);
+                        };
+                        
+                        reader.onerror = function() {
+                            statusDisplay.textContent = `读取文件失败`;
+                            statusDisplay.style.color = '#ff4e4e';
+                        };
+                        
+                        reader.readAsText(file);
+                    });
+                }
+            }, 1000); // 延迟1秒执行
+        });
+
+        // 完全重构的文件导入功能 - 修复堆叠和功能问题
+        (function() {
+            // 移除可能存在的旧元素
+            const oldModule = document.getElementById('fileImportModule');
+            const oldButton = document.getElementById('showImportModule');
+            if (oldModule) oldModule.remove();
+            if (oldButton) oldButton.remove();
+            
+            // 创建新的导入按钮 - 位置完全不同
+            const importButton = document.createElement('button');
+            importButton.id = 'showImportModule';
+            importButton.innerHTML = '📄'; // 使用文档图标而不是文件夹
+            importButton.setAttribute('title', '导入日报文件');
+            
+            // 设置样式 - 放在左上角避免冲突
+            Object.assign(importButton.style, {
+                position: 'fixed',
+                top: '100px', // 顶部偏移，避开导航区
+                left: '20px',
+                zIndex: '9999', // 高层级确保可见
+                background: 'linear-gradient(135deg, #3a42e0, #5a61ff)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                width: '40px',
+                height: '40px',
+                fontSize: '20px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            });
+            
+            document.body.appendChild(importButton);
+            
+            // 创建导入面板 - 初始隐藏
+            const importPanel = document.createElement('div');
+            importPanel.id = 'fileImportPanel';
+            
+            // 设置面板样式
+            Object.assign(importPanel.style, {
+                position: 'fixed',
+                top: '150px',
+                left: '20px',
+                zIndex: '10000',
+                background: 'rgba(28, 30, 38, 0.95)',
+                border: '1px solid #5a61ff',
+                borderRadius: '10px',
+                padding: '15px',
+                boxShadow: '0 5px 20px rgba(0,0,0,0.5)',
+                width: '280px',
+                display: 'none', // 初始隐藏
+                flexDirection: 'column',
+                gap: '10px'
+            });
+            
+            // 面板内容
+            importPanel.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3 style="margin:0; color:#87ceff; font-size:16px;">导入日报内容</h3>
+                    <button id="closeImportPanel" style="background:none; border:none; color:#87ceff; font-size:20px; cursor:pointer;">×</button>
+                </div>
+                <div style="color:#ccc; font-size:13px; margin-bottom:10px;">
+                    选择JSON或HTML文件，自动添加到日报编辑器
+                </div>
+                <label style="
+                    display: block;
+                    background: linear-gradient(135deg, #5a61ff 0%, #3a42e0 100%);
+                    color: white;
+                    text-align: center;
+                    padding: 10px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    margin-bottom: 10px;
+                ">
+                    <span style="font-size:16px; margin-right:5px;">📄</span> 选择文件
+                    <input type="file" id="reportFileInput" accept=".json,.html,.txt" style="
+                        position: absolute;
+                        width: 1px;
+                        height: 1px;
+                        padding: 0;
+                        margin: -1px;
+                        overflow: hidden;
+                        clip: rect(0,0,0,0);
+                        border: 0;
+                    ">
+                </label>
+                <div id="importStatus" style="
+                    background: rgba(0,0,0,0.2);
+                    padding: 8px;
+                    border-radius: 5px;
+                    font-size: 13px;
+                    color: #87ceff;
+                    min-height: 20px;
+                "></div>
+            `;
+            
+            document.body.appendChild(importPanel);
+            
+            // 添加事件监听器
+            importButton.addEventListener('click', () => {
+                importPanel.style.display = 'flex';
+                importButton.style.display = 'none';
+            });
+            
+            document.getElementById('closeImportPanel').addEventListener('click', () => {
+                importPanel.style.display = 'none';
+                importButton.style.display = 'flex';
+            });
+            
+            // 文件导入功能
+            document.getElementById('reportFileInput').addEventListener('change', function(e) {
+                const statusDiv = document.getElementById('importStatus');
+                
+                if (!this.files || !this.files[0]) {
+                    return;
+                }
+                
+                const file = this.files[0];
+                statusDiv.textContent = `处理中: ${file.name}...`;
+                statusDiv.style.color = '#87ceff';
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    const content = event.target.result;
+                    
+                    // ----- 关键点：多方法查找文本编辑区 -----
+                    
+                    // 方法1: 直接查找可见的textarea
+                    let foundTextarea = Array.from(document.querySelectorAll('textarea')).find(
+                        textarea => getComputedStyle(textarea).display !== 'none'
+                    );
+                    
+                    // 方法2: 通过常见的编辑器类名查找
+                    if (!foundTextarea) {
+                        const editorClasses = [
+                            '.report-editor-textarea', 
+                            '.editor-textarea',
+                            '.content-editor', 
+                            '.editor-content',
+                            '[contenteditable="true"]'
+                        ];
+                        
+                        for (const selector of editorClasses) {
+                            const element = document.querySelector(selector);
+                            if (element) {
+                                foundTextarea = element;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 如果还是找不到，获取第一个textarea
+                    if (!foundTextarea) {
+                        foundTextarea = document.querySelector('textarea');
+                    }
+                    
+                    if (!foundTextarea) {
+                        statusDiv.textContent = '错误: 找不到文本编辑区域';
+                        statusDiv.style.color = '#ff4e4e';
+                        return;
+                    }
+                    
+                    try {
+                        // ----- 关键点：强制内容填充 -----
+                        
+                        // 尝试JSON解析
+                        let isJson = false;
+                        let jsonContent = null;
+                        
+                        try {
+                            jsonContent = JSON.parse(content);
+                            isJson = true;
+                            console.log("成功解析JSON:", jsonContent);
+                        } catch (e) {
+                            isJson = false;
+                            console.log("非JSON格式或解析失败");
+                        }
+                        
+                        // 决定使用什么内容
+                        let finalContent = content;
+                        
+                        if (isJson && jsonContent.htmlContent) {
+                            finalContent = jsonContent.htmlContent;
+                            console.log("使用JSON中的htmlContent字段");
+                        }
+                        
+                        // 多种方式尝试修改内容
+                        if (foundTextarea.tagName === 'TEXTAREA') {
+                            // 直接设置值
+                            foundTextarea.value = finalContent;
+                            
+                            // 手动调整高度适应内容
+                            foundTextarea.style.height = 'auto';
+                            foundTextarea.style.height = (foundTextarea.scrollHeight + 10) + 'px';
+                            
+                            console.log("已设置textarea值");
+                        } else if (foundTextarea.getAttribute('contenteditable') === 'true') {
+                            // 处理contenteditable元素
+                            foundTextarea.innerHTML = finalContent;
+                            console.log("已设置contenteditable元素内容");
+                        }
+                        
+                        // 触发多种事件
+                        ['input', 'change', 'keyup'].forEach(eventType => {
+                            foundTextarea.dispatchEvent(new Event(eventType, { bubbles: true }));
+                            console.log(`已触发${eventType}事件`);
+                        });
+                        
+                        // 尝试查找并点击保存按钮
+                        setTimeout(() => {
+                            const possibleSaveButtons = [
+                                ...document.querySelectorAll('button'),
+                                ...document.querySelectorAll('input[type="submit"]'),
+                                ...document.querySelectorAll('a.btn'),
+                                ...document.querySelectorAll('[role="button"]')
+                            ].filter(btn => {
+                                const text = btn.textContent.toLowerCase();
+                                return text.includes('保存') || 
+                                       text.includes('提交') || 
+                                       text.includes('确认') ||
+                                       text.includes('确定');
+                            });
+                            
+                            console.log(`找到${possibleSaveButtons.length}个可能的保存按钮`);
+                            
+                            // 焦点到文本区域并模拟按键操作
+                            foundTextarea.focus();
+                            foundTextarea.dispatchEvent(new KeyboardEvent('keydown', {
+                                key: 'Enter',
+                                code: 'Enter',
+                                keyCode: 13,
+                                bubbles: true
+                            }));
+                            
+                            statusDiv.textContent = `已导入内容，长度: ${finalContent.length}字符`;
+                            statusDiv.style.color = '#4eff9f';
+                        }, 300);
+                        
+                    } catch (error) {
+                        console.error("导入处理错误:", error);
+                        statusDiv.textContent = `错误: ${error.message}`;
+                        statusDiv.style.color = '#ff4e4e';
+                    }
+                    
+                    // 清空文件输入以便再次选择相同文件
+                    this.value = '';
+                };
+                
+                reader.onerror = function() {
+                    statusDiv.textContent = '文件读取失败';
+                    statusDiv.style.color = '#ff4e4e';
+                };
+                
+                reader.readAsText(file);
+            });
+            
+            // 添加一些键盘快捷键
+            document.addEventListener('keydown', function(e) {
+                // Alt+I 打开导入面板
+                if (e.altKey && e.key === 'i') {
+                    if (importPanel.style.display === 'none') {
+                        importPanel.style.display = 'flex';
+                        importButton.style.display = 'none';
+                    } else {
+                        importPanel.style.display = 'none';
+                        importButton.style.display = 'flex';
+                    }
+                }
+            });
+            
+            console.log('文件导入功能已重新初始化');
+        })();
+
+        // 完全重写的日报导入功能 - 解决JSON解析与UI堆叠问题
+        (function() {
+            console.log("日报导入功能初始化 v2.0");
+            
+            // 清除可能存在的旧元素
+            const oldElements = document.querySelectorAll('.json-import-element');
+            oldElements.forEach(el => el.remove());
+            
+            // 创建导入按钮
+            const importButton = document.createElement('button');
+            importButton.className = 'json-import-element';
+            importButton.id = 'jsonImportButton';
+            importButton.innerHTML = '📄 导入日报';
+            importButton.title = '导入日报JSON文件';
+            
+            // 按钮样式 - 放在左侧避免重叠
+            importButton.style.cssText = `
+                position: fixed;
+                left: 20px;
+                top: 40%;
+                transform: translateY(-50%);
+                z-index: 9999;
+                background: linear-gradient(145deg, #2D67FF, #1E45DE);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 10px 15px;
+                font-size: 14px;
+                font-weight: bold;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: all 0.3s ease;
+            `;
+            
+            // 鼠标悬停效果
+            importButton.addEventListener('mouseover', function() {
+                this.style.background = 'linear-gradient(145deg, #3D77FF, #2E55EE)';
+                this.style.boxShadow = '0 6px 16px rgba(0,0,0,0.25)';
+            });
+            
+            importButton.addEventListener('mouseout', function() {
+                this.style.background = 'linear-gradient(145deg, #2D67FF, #1E45DE)';
+                this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+            });
+            
+            document.body.appendChild(importButton);
+            
+            // 创建状态指示器
+            const statusIndicator = document.createElement('div');
+            statusIndicator.className = 'json-import-element';
+            statusIndicator.id = 'importStatus';
+            statusIndicator.style.cssText = `
+                position: fixed;
+                left: 20px;
+                top: calc(40% + 50px);
+                background: rgba(0,0,0,0.7);
+                color: #4eff9f;
+                padding: 10px;
+                border-radius: 6px;
+                font-size: 13px;
+                z-index: 9999;
+                max-width: 300px;
+                display: none;
+                animation: fadeIn 0.3s;
+            `;
+            document.body.appendChild(statusIndicator);
+            
+            // 添加辅助样式
+            const styleEl = document.createElement('style');
+            styleEl.className = 'json-import-element';
+            styleEl.textContent = `
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                
+                @keyframes fadeOut {
+                    from { opacity: 1; transform: translateY(0); }
+                    to { opacity: 0; transform: translateY(10px); }
+                }
+                
+                @keyframes pulse {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.1); }
+                    100% { transform: scale(1); }
+                }
+                
+                .fadeOut {
+                    animation: fadeOut 0.3s forwards;
+                }
+                
+                .pulse {
+                    animation: pulse 0.6s infinite;
+                }
+            `;
+            document.head.appendChild(styleEl);
+            
+            // 创建隐藏的文件输入
+            const fileInput = document.createElement('input');
+            fileInput.className = 'json-import-element';
+            fileInput.type = 'file';
+            fileInput.id = 'jsonFileInput';
+            fileInput.accept = '.json,.txt,.html';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+            
+            // 显示状态消息的函数
+            function showStatus(message, type = 'info', duration = 5000) {
+                const statusEl = document.getElementById('importStatus');
+                if (!statusEl) return;
+                
+                statusEl.textContent = message;
+                statusEl.style.display = 'block';
+                
+                // 设置不同状态的颜色
+                if (type === 'error') {
+                    statusEl.style.color = '#ff4e4e';
+                } else if (type === 'success') {
+                    statusEl.style.color = '#4eff9f';
+                } else {
+                    statusEl.style.color = '#4cc9f0';
+                }
+                
+                if (duration > 0) {
+                    setTimeout(() => {
+                        statusEl.classList.add('fadeOut');
+                        setTimeout(() => {
+                            statusEl.style.display = 'none';
+                            statusEl.classList.remove('fadeOut');
+                        }, 300);
+                    }, duration);
+                }
+                
+                return statusEl;
+            }
+            
+            // 按钮点击事件
+            importButton.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // 文件选择事件
+            fileInput.addEventListener('change', function(e) {
+                if (!this.files || !this.files[0]) return;
+                
+                const file = this.files[0];
+                const statusEl = showStatus(`正在处理文件: ${file.name}...`, 'info', 0);
+                statusEl.classList.add('pulse');
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    try {
+                        const content = event.target.result;
+                        
+                        // 尝试多种方式解析JSON
+                        let jsonData;
+                        try {
+                            // 尝试直接解析
+                            jsonData = JSON.parse(content);
+                            console.log("JSON解析成功，类型:", typeof jsonData);
+                        } catch (parseError) {
+                            console.warn("直接解析失败，尝试清理后解析", parseError);
+                            
+                            // 尝试清理后解析
+                            const cleanedContent = content
+                                .replace(/[\u0000-\u001F]/g, '') // 移除控制字符
+                                .replace(/\\"/g, '"') // 处理转义引号
+                                .trim();
+                            
+                            try {
+                                jsonData = JSON.parse(cleanedContent);
+                                console.log("清理后解析成功");
+                            } catch (secondError) {
+                                // 检查HTML中嵌入的JSON
+                                console.warn("清理解析失败，尝试从HTML提取", secondError);
+                                const jsonMatch = content.match(/<script[^>]*type=["']application\/json["'][^>]*>([\s\S]*?)<\/script>/i);
+                                if (jsonMatch && jsonMatch[1]) {
+                                    try {
+                                        jsonData = JSON.parse(jsonMatch[1].trim());
+                                        console.log("从HTML提取JSON成功");
+                                    } catch (htmlExtractError) {
+                                        throw new Error("无法从HTML提取有效JSON: " + htmlExtractError.message);
+                                    }
+                                } else {
+                                    throw new Error("JSON格式无效，请确保文件内容是有效的JSON");
+                                }
+                            }
+                        }
+                        
+                        // 查找文本编辑区
+                        console.log("查找文本编辑区...");
+                        const textAreas = Array.from(document.querySelectorAll('textarea, [contenteditable="true"]'))
+                            .filter(el => window.getComputedStyle(el).display !== 'none');
+                        
+                        console.log(`找到 ${textAreas.length} 个可见文本编辑区`);
+                        
+                        if (textAreas.length === 0) {
+                            throw new Error("找不到可编辑的文本区域");
+                        }
+                        
+                        // 尝试找到最相关的文本编辑区
+                        const targetTextArea = textAreas.reduce((best, current) => {
+                            // 优先选择大尺寸的textArea
+                            const currentRect = current.getBoundingClientRect();
+                            const bestRect = best ? best.getBoundingClientRect() : {width: 0, height: 0};
+                            
+                            const currentSize = currentRect.width * currentRect.height;
+                            const bestSize = bestRect.width * bestRect.height;
+                            
+                            return currentSize > bestSize ? current : best;
+                        }, null);
+                        
+                        if (!targetTextArea) {
+                            throw new Error("无法确定目标文本编辑区");
+                        }
+                        
+                        console.log("找到目标编辑区:", targetTextArea);
+                        
+                        // 从JSON提取有用内容并格式化
+                        let formattedContent = "";
+                        
+                        // 检查是否有reportTitle字段 (日报标题)
+                        if (jsonData.reportTitle) {
+                            formattedContent += `# ${jsonData.reportTitle}\n\n`;
+                        }
+                        
+                        // 提取热门话题
+                        if (jsonData.sections && jsonData.sections.hotTopics && jsonData.sections.hotTopics.length > 0) {
+                            formattedContent += "## 今日热点话题\n\n";
+                            
+                            jsonData.sections.hotTopics.forEach((topic, index) => {
+                                formattedContent += `### ${index + 1}. ${topic.topic}\n`;
+                                formattedContent += `${topic.summary}\n\n`;
+                                
+                                // 添加关键词
+                                if (topic.keywords && topic.keywords.length > 0) {
+                                    formattedContent += `**关键词:** ${topic.keywords.join(', ')}\n\n`;
+                                }
+                            });
+                        }
+                        
+                        // 提取其他部分
+                        if (jsonData.sections) {
+                            for (const sectionName in jsonData.sections) {
+                                if (sectionName !== 'hotTopics') {
+                                    const section = jsonData.sections[sectionName];
+                                    formattedContent += `## ${section.title}\n\n`;
+                                    
+                                    if (section.content) {
+                                        formattedContent += `${section.content}\n\n`;
+                                    }
+                                    
+                                    if (section.subSections && section.subSections.length > 0) {
+                                        section.subSections.forEach((subSection, index) => {
+                                            formattedContent += `### ${index + 1}. ${subSection.title}\n`;
+                                            formattedContent += `${subSection.content}\n\n`;
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // 将格式化后的内容写入目标文本编辑区
+                        targetTextArea.value = formattedContent;
+                        
+                        // 显示成功消息
+                        showStatus(`成功导入文件: ${file.name}`, 'success', 3000);
+                    } catch (error) {
+                        console.error("处理文件时发生错误:", error);
+                        showStatus(`处理文件时发生错误: ${error.message}`, 'error', 5000);
+                    } finally {
+                        statusEl.classList.remove('pulse');
+                    }
+                };
+                
+                reader.readAsText(file);
+            });
+        })();
     </script>
 </body>
 </html>
