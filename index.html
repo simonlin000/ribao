@@ -2125,19 +2125,16 @@
                     updateDynamicPassword();
 
                     // 加载侧边栏和初始报告
-                    try {
-                        await updateSidebarReportList(); // 现在可以在 async 函数中使用 await
-                        await loadInitialReport();       // 现在可以在 async 函数中使用 await
-                    } catch (error) {
-                        console.error("初始化报告失败:", error);
-                        // 可以添加用户友好的错误提示
-                        const reportContent = document.getElementById('reportContent');
-                        if (reportContent) {
-                            reportContent.innerHTML = `<div class="error-message">初始化报告列表失败，请刷新页面重试。</div>`;
-                        }
-                    } finally {
-                        hideLoading(); // 确保在所有操作后隐藏加载指示器
-                    }
+                    updateSidebarReportList()
+                        .then(() => loadInitialReport())
+                        .then(() => {
+                            console.log("侧边栏和初始报告加载成功");
+                            // 后续操作...
+                        })
+                        .catch(error => {
+                            console.error("初始化报告失败:", error);
+                            // 错误处理...
+                        });
 
                     // 初始化管理面板（如果用户是管理员）
                     if (isAdmin) {
